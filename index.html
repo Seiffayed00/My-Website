@@ -1,0 +1,1663 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Inter-Tech CRM</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   VARIABLES & RESET
+============================================================ */
+:root {
+  --red: #C8102E;
+  --red-glow: rgba(200,16,46,0.25);
+  --gold: #F4A300;
+  --green: #00C896;
+  --blue: #3B82F6;
+  --bg1: #0A0F18;
+  --bg2: #111827;
+  --bg3: #1A2235;
+  --border: rgba(255,255,255,0.07);
+  --text: #F0F4F8;
+  --muted: #6B7A8D;
+  --sidebar-w: 240px;
+  --topbar-h: 60px;
+  --mobile-nav-h: 60px;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{overflow-x:hidden;max-width:100vw;}
+body{font-family:'Cairo',sans-serif;background:var(--bg1);color:var(--text);min-height:100vh;overflow-x:hidden;max-width:100vw;position:relative;}
+input,select,textarea,button{font-family:'Cairo',sans-serif;}
+button{cursor:pointer;}
+
+/* ============================================================
+   SCREENS
+============================================================ */
+.screen{display:none;}
+.screen.active{display:block;}
+
+/* ============================================================
+   LOGIN
+============================================================ */
+#loginScreen{display:flex;align-items:center;justify-content:center;min-height:100vh;background:radial-gradient(ellipse at 60% 40%,rgba(200,16,46,0.08) 0%,transparent 60%),var(--bg1);}
+.login-box{background:var(--bg2);border:1px solid var(--border);border-radius:24px;padding:40px 36px;width:100%;max-width:380px;text-align:center;}
+.login-logo{width:60px;height:60px;background:var(--red);border-radius:16px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:20px;margin:0 auto 20px;box-shadow:0 8px 24px var(--red-glow);}
+.login-title{font-size:22px;font-weight:900;margin-bottom:6px;}
+.login-sub{font-size:12px;color:var(--muted);margin-bottom:28px;}
+.login-box input{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:12px 16px;color:var(--text);font-size:14px;margin-bottom:12px;outline:none;transition:border-color 0.2s;direction:ltr;text-align:right;}
+.login-box input:focus{border-color:rgba(200,16,46,0.4);}
+.login-error{color:var(--red);font-size:12px;min-height:18px;margin-bottom:8px;}
+.btn-login{width:100%;background:var(--red);color:#fff;border:none;border-radius:12px;padding:13px;font-size:15px;font-weight:700;transition:all 0.2s;}
+.btn-login:hover{background:#a50d24;box-shadow:0 4px 16px var(--red-glow);}
+
+/* ============================================================
+   APP LAYOUT
+============================================================ */
+#appScreen{display:none;}
+#appScreen.active{display:flex;min-height:100vh;}
+
+/* SIDEBAR */
+.sidebar{width:var(--sidebar-w);background:rgba(10,15,24,0.98);border-left:1px solid var(--border);display:flex;flex-direction:column;position:fixed;right:0;top:0;height:100vh;z-index:100;}
+.sb-logo{padding:18px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;}
+.sb-logo-icon{width:38px;height:38px;background:var(--red);border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:13px;box-shadow:0 4px 12px var(--red-glow);flex-shrink:0;}
+.sb-brand{font-size:14px;font-weight:800;}
+.sb-sub{font-size:10px;color:var(--muted);}
+.sb-nav{flex:1;padding:12px 8px;overflow-y:auto;}
+.nav-sec{font-size:10px;color:var(--muted);font-weight:700;letter-spacing:1px;padding:8px 10px 4px;text-transform:uppercase;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;cursor:pointer;font-size:13px;font-weight:600;color:var(--muted);transition:all 0.15s;margin-bottom:2px;}
+.nav-item:hover{background:rgba(255,255,255,0.04);color:var(--text);}
+.nav-item.active{background:rgba(200,16,46,0.12);color:white;border-right:2px solid var(--red);}
+.nav-badge{margin-right:auto;background:var(--red);color:#fff;border-radius:10px;padding:1px 7px;font-size:10px;font-weight:700;}
+.sb-user{padding:14px 16px;border-top:1px solid var(--border);display:flex;align-items:center;gap:10px;}
+.sb-av{width:34px;height:34px;border-radius:10px;background:var(--red);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:13px;flex-shrink:0;}
+.sb-name{font-size:13px;font-weight:700;}
+.sb-role{font-size:10px;color:var(--muted);}
+.btn-logout{margin-right:auto;background:transparent;border:1px solid var(--border);border-radius:8px;padding:6px 10px;color:var(--muted);font-size:12px;transition:all 0.15s;}
+.btn-logout:hover{border-color:var(--red);color:var(--red);}
+
+/* MAIN */
+.main{flex:1;margin-right:var(--sidebar-w);display:flex;flex-direction:column;min-height:100vh;}
+
+/* TOPBAR */
+.topbar{background:rgba(10,15,24,0.9);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:0 24px;height:var(--topbar-h);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;gap:12px;}
+.topbar-left{display:flex;align-items:center;gap:10px;min-width:0;}
+.topbar-right-group{display:flex;align-items:center;gap:8px;}
+.page-title{font-size:16px;font-weight:800;white-space:nowrap;}
+.page-title span{color:var(--red);}
+.topbar-actions{display:flex;align-items:center;gap:8px;}
+.search-wrap{display:flex;align-items:center;gap:8px;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:7px 12px;}
+.search-wrap input{background:none;border:none;outline:none;color:var(--text);font-size:13px;width:160px;}
+
+/* CONTENT */
+.content{padding:20px 24px;flex:1;}
+
+/* ============================================================
+   BUTTONS
+============================================================ */
+.btn-primary{background:var(--red);color:#fff;border:none;border-radius:10px;padding:8px 16px;font-size:13px;font-weight:700;display:flex;align-items:center;gap:6px;transition:all 0.2s;}
+.btn-primary:hover{background:#a50d24;box-shadow:0 4px 16px var(--red-glow);}
+.btn-secondary{background:transparent;color:var(--text);border:1px solid var(--border);border-radius:10px;padding:8px 14px;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px;transition:all 0.2s;}
+.btn-secondary:hover{background:var(--bg3);border-color:rgba(255,255,255,0.15);}
+.btn-danger{background:transparent;color:var(--red);border:1px solid rgba(200,16,46,0.3);border-radius:10px;padding:8px 14px;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px;transition:all 0.2s;}
+.btn-danger:hover{background:rgba(200,16,46,0.1);}
+.btn-icon{background:transparent;border:1px solid var(--border);border-radius:8px;padding:6px 10px;color:var(--muted);font-size:14px;transition:all 0.15s;}
+.btn-icon:hover{color:var(--text);background:var(--bg3);}
+
+/* ============================================================
+   FILTERS BAR
+============================================================ */
+.filters-bar{display:flex;align-items:center;gap:8px;margin-bottom:16px;flex-wrap:wrap;}
+.filter-select{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:8px 12px;color:var(--text);font-size:12px;outline:none;font-family:'Cairo',sans-serif;cursor:pointer;}
+.filter-select:focus{border-color:rgba(200,16,46,0.4);}
+
+/* VIEW TABS */
+.view-tabs{display:flex;gap:4px;background:var(--bg3);border-radius:10px;padding:3px;}
+.view-tab{padding:5px 12px;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;color:var(--muted);transition:all 0.15s;border:none;background:none;}
+.view-tab.active{background:var(--bg2);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,0.3);}
+
+/* ============================================================
+   CLIENT CARDS (GRID VIEW)
+============================================================ */
+.clients-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;}
+.client-card{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:16px;cursor:pointer;transition:all 0.2s;animation:fadeIn 0.3s ease both;}
+.client-card:hover{border-color:rgba(200,16,46,0.25);transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,0.3);}
+.client-card.selected{border-color:var(--red);background:rgba(200,16,46,0.06);}
+.cc-header{display:flex;align-items:flex-start;gap:12px;margin-bottom:12px;}
+.cc-avatar{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:16px;flex-shrink:0;}
+.cc-name{font-size:14px;font-weight:700;line-height:1.3;margin-bottom:3px;}
+.cc-sub{font-size:11px;color:var(--muted);}
+.ind-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:700;margin-bottom:8px;}
+.ind-petroleum{background:rgba(200,16,46,0.12);color:#ff6b6b;}
+.ind-chemical{background:rgba(148,0,211,0.12);color:#b06bff;}
+.ind-water{background:rgba(59,130,246,0.12);color:#6ba8ff;}
+.ind-steel{background:rgba(100,116,139,0.12);color:#94a3b8;}
+.ind-cement{background:rgba(161,140,100,0.12);color:#c4a96b;}
+.ind-food{background:rgba(34,197,94,0.12);color:#6bcf8a;}
+.ind-other{background:rgba(107,122,141,0.12);color:#8fa0b0;}
+.cc-info{display:flex;gap:12px;font-size:11px;color:var(--muted);margin-bottom:12px;}
+.cc-actions{display:flex;gap:6px;}
+.action-btn{flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:7px 4px;font-size:12px;text-align:center;transition:all 0.15s;display:flex;align-items:center;justify-content:center;gap:4px;}
+.action-btn:hover{background:rgba(255,255,255,0.06);}
+.action-btn.wa:hover{border-color:rgba(37,211,102,0.4);color:#25d366;}
+.action-btn.call:hover{border-color:rgba(59,130,246,0.4);color:#3b82f6;}
+.action-btn.map:hover{border-color:rgba(244,163,0,0.4);color:var(--gold);}
+.action-btn.mail:hover{border-color:rgba(244,163,0,0.4);color:var(--gold);}
+.action-btn.hist:hover{border-color:rgba(200,16,46,0.4);color:var(--red);}
+.cc-check{width:20px;height:20px;border-radius:6px;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.15s;}
+.client-card.selected .cc-check{background:var(--red);border-color:var(--red);}
+
+/* ============================================================
+   CLIENT LIST VIEW
+============================================================ */
+.clients-list{display:flex;flex-direction:column;gap:6px;}
+.list-header{display:grid;grid-template-columns:2fr 1fr 1fr 1fr auto;gap:12px;padding:8px 16px;font-size:11px;color:var(--muted);font-weight:700;letter-spacing:0.5px;}
+.list-row{display:grid;grid-template-columns:2fr 1fr 1fr 1fr auto;gap:12px;padding:12px 16px;background:var(--bg2);border:1px solid var(--border);border-radius:12px;align-items:center;cursor:pointer;transition:all 0.15s;}
+.list-row:hover{border-color:rgba(200,16,46,0.2);background:rgba(200,16,46,0.02);}
+.list-company{display:flex;align-items:center;gap:10px;}
+.list-av{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:12px;flex-shrink:0;}
+.list-name{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.list-sub{font-size:11px;color:var(--muted);}
+.list-cell{font-size:12px;color:var(--muted);}
+.list-actions{display:flex;gap:4px;}
+
+/* ============================================================
+   ASSIGN BAR
+============================================================ */
+.assign-bar{background:rgba(200,16,46,0.06);border:1px solid rgba(200,16,46,0.2);border-radius:12px;padding:10px 16px;display:none;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap;}
+.assign-bar.visible{display:flex;}
+.sel-count{font-size:13px;font-weight:700;color:var(--red);}
+.assign-select{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:7px 12px;color:var(--text);font-size:12px;outline:none;font-family:'Cairo',sans-serif;}
+
+/* ============================================================
+   MODALS
+============================================================ */
+.overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;width:100vw;height:100vh;background:rgba(0,0,0,0.7);backdrop-filter:blur(4px);z-index:200;align-items:center;justify-content:center;padding:20px;overflow:hidden;}
+.overlay.open{display:flex;}
+.modal{background:var(--bg2);border:1px solid var(--border);border-radius:20px;width:calc(100vw - 40px);max-width:520px;max-height:88vh;display:flex;flex-direction:column;animation:slideUp 0.25s ease;overflow:hidden;}
+@keyframes slideUp{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
+.modal-header{padding:18px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.modal-title{font-size:16px;font-weight:800;}
+.modal-close{background:none;border:none;color:var(--muted);font-size:22px;line-height:1;padding:0 4px;transition:color 0.15s;}
+.modal-close:hover{color:var(--text);}
+.modal-body{padding:20px 24px;overflow-y:auto;flex:1;-webkit-overflow-scrolling:touch;}
+.modal-footer{padding:16px 24px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:flex-end;flex-shrink:0;}
+.modal-footer .btn-primary,.modal-footer .btn-secondary{min-width:100px;justify-content:center;}
+
+/* FORM ELEMENTS */
+.form-group{margin-bottom:14px;}
+.form-group label{display:block;font-size:11px;font-weight:700;color:var(--muted);margin-bottom:6px;letter-spacing:0.3px;}
+.form-input{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:10px 14px;color:var(--text);font-size:13px;outline:none;transition:border-color 0.2s;font-family:'Cairo',sans-serif;}
+.form-input:focus{border-color:rgba(200,16,46,0.4);}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.form-section{border-top:1px solid var(--border);margin:16px 0 14px;padding-top:14px;font-size:11px;color:var(--muted);font-weight:700;letter-spacing:0.5px;text-transform:uppercase;}
+
+/* ============================================================
+   CONTACTS TABLE
+============================================================ */
+.contacts-table{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px;}
+.contacts-table th{background:var(--bg3);color:var(--muted);padding:7px 10px;text-align:right;font-weight:700;font-size:11px;border-bottom:1px solid var(--border);}
+.contacts-table td{padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:middle;}
+.contacts-table tr:last-child td{border-bottom:none;}
+.add-contact-grid{display:grid;grid-template-columns:1.5fr 1fr 1fr 1.5fr 1.5fr auto;gap:6px;margin-top:10px;align-items:center;}
+.add-contact-grid .form-input{margin:0;padding:8px 10px;}
+
+/* ============================================================
+   DETAIL MODAL
+============================================================ */
+.detail-modal{max-width:620px;}
+.detail-header{display:flex;align-items:center;gap:14px;padding:20px 24px;border-bottom:1px solid var(--border);}
+.detail-avatar{width:52px;height:52px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:20px;flex-shrink:0;}
+.detail-company{font-size:18px;font-weight:900;}
+.detail-sub{font-size:12px;color:var(--muted);margin-top:3px;}
+.detail-btns{display:flex;gap:8px;padding:14px 24px;border-bottom:1px solid var(--border);flex-wrap:wrap;}
+.detail-btn{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:8px 14px;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px;transition:all 0.15s;}
+.detail-btn.wa:hover{background:rgba(37,211,102,0.1);border-color:rgba(37,211,102,0.3);color:#25d366;}
+.detail-btn.call:hover{background:rgba(59,130,246,0.1);border-color:rgba(59,130,246,0.3);color:#3b82f6;}
+.detail-btn.map:hover{background:rgba(244,163,0,0.1);border-color:rgba(244,163,0,0.3);color:var(--gold);}
+.detail-btn.mail:hover{background:rgba(244,163,0,0.1);border-color:rgba(244,163,0,0.3);color:var(--gold);}
+.detail-btn.edit:hover{background:rgba(59,130,246,0.1);border-color:rgba(59,130,246,0.3);color:#3b82f6;}
+.detail-btn.del:hover{background:rgba(200,16,46,0.1);border-color:rgba(200,16,46,0.3);color:var(--red);}
+.detail-info-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:16px 24px;border-bottom:1px solid var(--border);}
+.info-item{background:var(--bg3);border-radius:10px;padding:10px 12px;}
+.info-label{font-size:10px;color:var(--muted);font-weight:700;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.3px;}
+.info-value{font-size:13px;font-weight:600;}
+.sec-title{font-size:11px;color:var(--muted);font-weight:700;letter-spacing:0.5px;text-transform:uppercase;padding:14px 24px 8px;display:flex;align-items:center;gap:8px;}
+.sec-title::after{content:'';flex:1;height:1px;background:var(--border);}
+
+/* HISTORY */
+.history-list{padding:0 24px 16px;}
+.history-item{display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);}
+.history-item:last-child{border-bottom:none;}
+.history-dot{width:8px;height:8px;border-radius:50%;margin-top:6px;flex-shrink:0;}
+.history-type{font-size:11px;font-weight:700;color:var(--muted);}
+.history-title{font-size:13px;font-weight:600;}
+.history-note{font-size:12px;color:var(--muted);margin-top:2px;}
+.history-date{font-size:11px;color:var(--muted);margin-top:4px;}
+.add-history{padding:0 24px 20px;}
+.add-history-title{font-size:12px;font-weight:700;color:var(--muted);margin-bottom:10px;}
+.history-form-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;}
+
+/* ============================================================
+   STATS PAGE
+============================================================ */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;margin-bottom:20px;}
+.stat-card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:18px;text-align:center;}
+.stat-num{font-size:38px;font-weight:900;line-height:1;}
+.stat-label{font-size:11px;color:var(--muted);margin-top:6px;font-weight:600;}
+.charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.chart-card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:18px;}
+.chart-title{font-size:13px;font-weight:800;margin-bottom:14px;}
+.bar-row{display:flex;align-items:center;gap:8px;margin-bottom:7px;}
+.bar-label{font-size:11px;color:var(--muted);width:155px;text-align:right;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.bar-track{flex:1;background:var(--bg3);border-radius:4px;height:7px;}
+.bar-fill{height:7px;border-radius:4px;background:var(--red);transition:width 0.6s ease;}
+.bar-count{font-size:11px;color:var(--muted);width:28px;text-align:left;flex-shrink:0;}
+
+/* ============================================================
+   HISTORY PAGE
+============================================================ */
+.history-page{padding:0;}
+.history-filters{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;}
+.history-entries{display:flex;flex-direction:column;gap:8px;}
+.history-entry{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:14px 16px;}
+.he-company{font-size:13px;font-weight:700;}
+.he-type{font-size:11px;font-weight:700;}
+.he-title{font-size:12px;color:var(--muted);}
+.he-meta{font-size:11px;color:var(--muted);margin-top:4px;}
+
+/* ============================================================
+   USERS PAGE
+============================================================ */
+.users-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;}
+.user-card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:16px;}
+.uc-top{display:flex;gap:12px;align-items:flex-start;margin-bottom:14px;}
+.uc-avatar{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:16px;flex-shrink:0;}
+.uc-name{font-size:14px;font-weight:700;}
+.uc-email{font-size:11px;color:var(--muted);}
+.role-badge{display:inline-block;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;margin-top:3px;}
+.r-admin{background:rgba(200,16,46,0.12);color:#ff6b6b;}
+.r-manager{background:rgba(244,163,0,0.12);color:var(--gold);}
+.r-sales{background:rgba(0,200,150,0.12);color:var(--green);}
+.uc-footer{display:flex;align-items:center;justify-content:space-between;}
+.status-dot{font-size:11px;}
+
+/* ============================================================
+   EMPTY & LOADING STATES
+============================================================ */
+.empty-state{text-align:center;padding:60px 20px;color:var(--muted);}
+.empty-icon{font-size:56px;margin-bottom:16px;opacity:0.4;}
+.loading{display:flex;align-items:center;justify-content:center;gap:10px;padding:60px;color:var(--muted);}
+.spinner{width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--red);border-radius:50%;animation:spin 0.8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+
+/* ============================================================
+   TOAST
+============================================================ */
+.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:10px 18px;font-size:13px;font-weight:600;z-index:9999;opacity:0;transition:all 0.3s;white-space:nowrap;pointer-events:none;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+.toast.success{border-color:rgba(0,200,150,0.4);}
+.toast.error{border-color:rgba(200,16,46,0.4);}
+
+/* ============================================================
+   MOBILE NAV
+============================================================ */
+.mobile-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:rgba(10,15,24,0.98);border-top:1px solid var(--border);z-index:150;height:var(--mobile-nav-h);}
+.mobile-nav-inner{display:flex;height:100%;}
+.mn-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:var(--muted);cursor:pointer;font-size:9px;font-weight:700;border-top:2px solid transparent;transition:all 0.15s;}
+.mn-item.active{color:var(--red);border-top-color:var(--red);}
+.mn-item span:first-child{font-size:20px;}
+
+/* ============================================================
+   MOBILE STYLES
+============================================================ */
+@media(max-width:768px){
+  .sidebar{display:none !important;}
+  .main{margin-right:0 !important;}
+  :root{--topbar-h:56px;}
+  .topbar{padding:0 12px;gap:6px;flex-wrap:nowrap;}
+  .topbar-actions{gap:6px;}
+  .topbar-actions .btn-secondary{display:none !important;}
+  .topbar-actions .btn-primary{padding:7px 10px;font-size:12px;}
+  #mobileMenuBtn{display:flex !important;}
+  .search-wrap{padding:6px 10px;}
+  .search-wrap input{width:90px;font-size:12px;}
+  .page-title{font-size:13px;white-space:nowrap;}
+  #mobileLogo{flex-shrink:0;}
+  .content{padding:14px 12px;padding-bottom:calc(var(--mobile-nav-h) + 14px);}
+  .clients-grid{grid-template-columns:1fr;}
+  .filters-bar{gap:6px;display:grid;grid-template-columns:1fr 1fr;}
+  .filters-bar .view-tabs{grid-column:1/-1;}
+  .filters-bar .btn-icon{grid-column:1/-1;width:100%;}
+  .filter-select{width:100%;font-size:12px;}
+  .overlay{padding:0 !important;align-items:flex-end !important;overflow:hidden !important;}
+  .modal{width:100vw !important;max-width:100vw !important;border-radius:20px 20px 0 0 !important;max-height:92vh !important;overflow:hidden !important;}
+  .modal-header{padding:14px 16px !important;}
+  .modal-body{overflow-y:auto !important;overflow-x:hidden !important;-webkit-overflow-scrolling:touch !important;padding:14px 16px !important;}
+  .modal-footer{padding:12px 16px !important;}
+  .detail-btns{overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:4px;}
+  .detail-info-grid{grid-template-columns:1fr 1fr !important;}
+  .contacts-table{table-layout:fixed;width:100%;font-size:11px;}
+  .contacts-table th,.contacts-table td{padding:5px 6px !important;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:80px;}
+  .add-contact-grid{grid-template-columns:1fr 1fr !important;}
+  .form-grid{grid-template-columns:1fr;}
+  .add-contact-grid{grid-template-columns:1fr 1fr;}
+  .detail-info-grid{grid-template-columns:1fr 1fr;}
+  .charts-grid{grid-template-columns:1fr;}
+  .stats-grid{grid-template-columns:1fr 1fr;}
+  .mobile-nav{display:block;}
+  .list-header{display:none;}
+  .list-row{grid-template-columns:1fr auto;}
+  .list-cell-eng,.list-cell-ind,.list-cell-reg{display:none;}
+  .list-name{max-width:180px;}
+  .mobile-menu{display:none;position:fixed;top:var(--topbar-h);left:0;right:0;background:rgba(10,15,24,0.98);border-bottom:1px solid var(--border);z-index:100;padding:10px 12px;flex-direction:column;gap:8px;}
+  .mobile-menu.open{display:flex;}
+  .mobile-menu .btn-secondary,.mobile-menu .btn-primary{width:100%;justify-content:center;}
+}
+@media(min-width:769px){
+  #mobileMenuBtn{display:none !important;}
+}
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     LOGIN SCREEN
+============================================================ -->
+<div id="loginScreen" class="screen active">
+  <div class="login-box">
+    <div class="login-logo">IT</div>
+    <div class="login-title">Inter-Tech CRM</div>
+    <div class="login-sub">نظام إدارة عملاء Inter-Tech</div>
+    <input type="text" id="loginEmail" placeholder="اسم المستخدم / الإيميل" autocomplete="username">
+    <input type="password" id="loginPass" placeholder="كلمة السر" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+    <div class="login-error" id="loginError"></div>
+    <button class="btn-login" onclick="doLogin()" id="loginBtn">دخول ←</button>
+  </div>
+</div>
+
+<!-- ============================================================
+     APP SCREEN
+============================================================ -->
+<div id="appScreen">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sb-logo">
+      <div class="sb-logo-icon">IT</div>
+      <div><div class="sb-brand">Inter-Tech</div><div class="sb-sub">إدارة العملاء</div></div>
+    </div>
+    <nav class="sb-nav">
+      <div class="nav-sec">القائمة</div>
+      <div class="nav-item active" id="nav_clients" onclick="showPage('clients')">🏭 العملاء <span class="nav-badge" id="clientsBadge">0</span></div>
+      <div class="nav-item" id="nav_history" onclick="showPage('history')">📋 سجل التعاملات</div>
+      <div class="nav-item" id="nav_stats" style="display:none" onclick="showPage('stats')">📊 الإحصائيات</div>
+      <div class="nav-item" id="nav_users" style="display:none" onclick="showPage('users')">👥 المستخدمين</div>
+    </nav>
+    <div class="sb-user">
+      <div class="sb-av" id="userAv">أ</div>
+      <div><div class="sb-name" id="userName">—</div><div class="sb-role" id="userRole"></div></div>
+      <button class="btn-logout" onclick="doLogout()">⏻</button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- TOPBAR -->
+    <div class="topbar">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div id="mobileLogo" style="display:none;width:34px;height:34px;background:var(--red);border-radius:9px;align-items:center;justify-content:center;font-weight:900;font-size:12px;box-shadow:0 4px 12px var(--red-glow);flex-shrink:0">IT</div>
+        <div class="page-title" id="pageTitle">قائمة <span>العملاء</span></div>
+      </div>
+      <div class="topbar-actions" id="topbarActions">
+        <div class="search-wrap">
+          <span style="color:var(--muted)">🔍</span>
+          <input type="text" id="searchInput" placeholder="ابحث..." oninput="renderClients()">
+        </div>
+        <button class="btn-secondary" id="importBtn" style="display:none" onclick="openModal('importModal')">📥 استيراد</button>
+        <button class="btn-secondary" id="exportBtn" style="display:none" onclick="openModal('exportModal')">📤 تصدير</button>
+        <button class="btn-secondary" id="assignBtn" style="display:none" onclick="toggleAssignMode()">🎯 توزيع</button>
+        <button class="btn-primary" id="addClientBtn" onclick="openAddClient()">＋ عميل جديد</button>
+        <button class="btn-icon" id="mobileMenuBtn" onclick="toggleMobileMenu()" style="display:none">⋮</button>
+      </div>
+    </div>
+
+    <!-- MOBILE MENU -->
+    <div class="mobile-menu" id="mobileMenu">
+      <button class="btn-secondary" id="importBtnM" style="display:none" onclick="openModal('importModal');closeMobileMenu()">📥 استيراد Excel</button>
+      <button class="btn-secondary" id="exportBtnM" style="display:none" onclick="openModal('exportModal');closeMobileMenu()">📤 تصدير Excel</button>
+      <button class="btn-secondary" id="assignBtnM" style="display:none" onclick="toggleAssignMode();closeMobileMenu()">🎯 توزيع جماعي</button>
+    </div>
+
+    <!-- CONTENT -->
+    <div class="content">
+
+      <!-- CLIENTS PAGE -->
+      <div id="page_clients">
+        <div class="filters-bar">
+          <div class="view-tabs">
+            <button class="view-tab active" onclick="setView('grid',this)">⊞ بطاقات</button>
+            <button class="view-tab" onclick="setView('list',this)">☰ قائمة</button>
+          </div>
+          <select class="filter-select" id="filterRegion" onchange="renderClients()">
+            <option value="">🗺️ كل المناطق</option>
+            <option>القاهرة</option><option>الجيزة</option><option>الإسكندرية</option><option>الدقهلية</option><option>البحر الأحمر</option><option>البحيرة</option><option>الفيوم</option><option>الغربية</option><option>الإسماعيلية</option><option>المنوفية</option><option>المنيا</option><option>القليوبية</option><option>الوادي الجديد</option><option>السويس</option><option>أسوان</option><option>أسيوط</option><option>بني سويف</option><option>بورسعيد</option><option>دمياط</option><option>الشرقية</option><option>جنوب سيناء</option><option>كفر الشيخ</option><option>مطروح</option><option>الأقصر</option><option>قنا</option><option>شمال سيناء</option><option>سوهاج</option><option>السادس من أكتوبر</option><option>العاشر من رمضان</option><option>أخرى</option>
+          </select>
+          <select class="filter-select" id="filterIndustry" onchange="renderClients()">
+            <option value="">🏭 كل القطاعات</option>
+            <option>Aviation</option><option>Cement &amp; Mining</option><option>Consultants</option><option>Contractors</option><option>Facilities HVAC</option><option>Fertilizers &amp; Chemicals</option><option>Food &amp; Pharmaceutical</option><option>General Industry</option><option>Heavy Equipment</option><option>Marine</option><option>Military</option><option>OEM</option><option>Oil &amp; Gas</option><option>Paper</option><option>Petrochemicals &amp; Refineries</option><option>Power Generation</option><option>Renewable Energy</option><option>Steel</option><option>Sugar</option><option>Water &amp; Waste Water</option>
+          </select>
+          <select class="filter-select" id="filterRep" onchange="renderClients()">
+            <option value="">👤 كل المندوبين</option>
+          </select>
+          <button class="btn-icon" onclick="clearFilters()" title="مسح الفلاتر">✖️</button>
+        </div>
+        <div class="assign-bar" id="assignBar">
+          <span class="sel-count" id="selCount">0 عميل محدد</span>
+          <select class="assign-select" id="assignTo"><option value="">👤 اختر المندوب...</option></select>
+          <button class="btn-primary" onclick="doAssign()">🎯 وزّع</button>
+          <select class="assign-select" id="bulkIndustry">
+            <option value="">🏭 غيّر القطاع...</option>
+            <option>Aviation</option><option>Cement &amp; Mining</option><option>Consultants</option><option>Contractors</option><option>Facilities HVAC</option><option>Fertilizers &amp; Chemicals</option><option>Food &amp; Pharmaceutical</option><option>General Industry</option><option>Heavy Equipment</option><option>Marine</option><option>Military</option><option>OEM</option><option>Oil &amp; Gas</option><option>Paper</option><option>Petrochemicals &amp; Refineries</option><option>Power Generation</option><option>Renewable Energy</option><option>Steel</option><option>Sugar</option><option>Water &amp; Waste Water</option>
+          </select>
+          <select class="assign-select" id="bulkRegion">
+            <option value="">🗺️ غيّر المنطقة...</option>
+            <option>القاهرة</option><option>الجيزة</option><option>الإسكندرية</option><option>الدقهلية</option><option>البحر الأحمر</option><option>البحيرة</option><option>الفيوم</option><option>الغربية</option><option>الإسماعيلية</option><option>المنوفية</option><option>المنيا</option><option>القليوبية</option><option>الوادي الجديد</option><option>السويس</option><option>أسوان</option><option>أسيوط</option><option>بني سويف</option><option>بورسعيد</option><option>دمياط</option><option>الشرقية</option><option>جنوب سيناء</option><option>كفر الشيخ</option><option>مطروح</option><option>الأقصر</option><option>قنا</option><option>شمال سيناء</option><option>سوهاج</option><option>السادس من أكتوبر</option><option>العاشر من رمضان</option><option>أخرى</option>
+          </select>
+          <button class="btn-primary" style="background:var(--blue)" onclick="doBulkUpdate()">✏️ حدّث</button>
+          <button class="btn-danger" onclick="doDeleteSelected()">🗑️ حذف</button>
+          <button class="btn-secondary" onclick="selectAllFiltered()">☑️ الكل</button>
+          <button class="btn-icon" onclick="toggleAssignMode()">✖️</button>
+        </div>
+        <div id="clientsContainer"></div>
+      </div>
+
+      <!-- HISTORY PAGE -->
+      <div id="page_history" style="display:none">
+        <div id="historyContainer"></div>
+      </div>
+
+      <!-- STATS PAGE -->
+      <div id="page_stats" style="display:none">
+        <div id="statsContainer"></div>
+      </div>
+
+      <!-- USERS PAGE -->
+      <div id="page_users" style="display:none">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+          <div style="font-size:15px;font-weight:700">إدارة المستخدمين</div>
+          <button class="btn-primary" onclick="openAddUser()">＋ مستخدم جديد</button>
+        </div>
+        <div class="users-grid" id="usersContainer"></div>
+      </div>
+
+    </div><!-- /content -->
+  </main><!-- /main -->
+
+  <!-- MOBILE NAV -->
+  <nav class="mobile-nav">
+    <div class="mobile-nav-inner">
+      <div class="mn-item active" id="mn_clients" onclick="showPage('clients')"><span>🏭</span>العملاء</div>
+      <div class="mn-item" id="mn_history" onclick="showPage('history')"><span>📋</span>التعاملات</div>
+      <div class="mn-item" id="mn_stats" style="display:none" onclick="showPage('stats')"><span>📊</span>إحصائيات</div>
+      <div class="mn-item" id="mn_users" style="display:none" onclick="showPage('users')"><span>👥</span>مستخدمين</div>
+      <div class="mn-item" onclick="doLogout()"><span>⏻</span>خروج</div>
+    </div>
+  </nav>
+
+</div><!-- /appScreen -->
+
+<!-- ============================================================
+     MODALS
+============================================================ -->
+
+<!-- ADD / EDIT CLIENT MODAL -->
+<div class="overlay" id="clientModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="clientModalTitle">＋ عميل جديد</div>
+      <button class="modal-close" onclick="closeModal('clientModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group"><label>اسم الشركة *</label><input class="form-input" id="cm_company" placeholder="اسم الشركة"></div>
+      <div class="form-grid">
+        <div class="form-group"><label>القطاع الصناعي</label>
+          <select class="form-input" id="cm_industry">
+            <option value="">اختر القطاع</option>
+            <option>Aviation</option><option>Cement &amp; Mining</option><option>Consultants</option><option>Contractors</option><option>Facilities HVAC</option><option>Fertilizers &amp; Chemicals</option><option>Food &amp; Pharmaceutical</option><option>General Industry</option><option>Heavy Equipment</option><option>Marine</option><option>Military</option><option>OEM</option><option>Oil &amp; Gas</option><option>Paper</option><option>Petrochemicals &amp; Refineries</option><option>Power Generation</option><option>Renewable Energy</option><option>Steel</option><option>Sugar</option><option>Water &amp; Waste Water</option>
+          </select>
+        </div>
+        <div class="form-group"><label>المنطقة</label>
+          <select class="form-input" id="cm_region">
+            <option value="">اختر المنطقة</option>
+            <option>القاهرة</option><option>الجيزة</option><option>الإسكندرية</option><option>الدقهلية</option><option>البحر الأحمر</option><option>البحيرة</option><option>الفيوم</option><option>الغربية</option><option>الإسماعيلية</option><option>المنوفية</option><option>المنيا</option><option>القليوبية</option><option>الوادي الجديد</option><option>السويس</option><option>أسوان</option><option>أسيوط</option><option>بني سويف</option><option>بورسعيد</option><option>دمياط</option><option>الشرقية</option><option>جنوب سيناء</option><option>كفر الشيخ</option><option>مطروح</option><option>الأقصر</option><option>قنا</option><option>شمال سيناء</option><option>سوهاج</option><option>السادس من أكتوبر</option><option>العاشر من رمضان</option><option>أخرى</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group"><label>العنوان</label><input class="form-input" id="cm_address" placeholder="العنوان"></div>
+      <div class="form-group"><label>ملاحظات</label><textarea class="form-input" id="cm_notes" placeholder="ملاحظات..." style="min-height:70px;resize:vertical"></textarea></div>
+      <div class="form-section">👥 جهات الاتصال (حتى 7)</div>
+      <div id="cm_contacts_list"></div>
+      <div class="add-contact-grid" style="margin-top:10px">
+        <input class="form-input" id="cc_name" placeholder="الاسم *">
+        <input class="form-input" id="cc_dept" placeholder="القسم">
+        <input class="form-input" id="cc_title" placeholder="المنصب">
+        <input class="form-input" id="cc_phone" placeholder="الموبايل" style="direction:ltr">
+        <input class="form-input" id="cc_email" placeholder="الإيميل" style="direction:ltr">
+        <button class="btn-primary" style="padding:8px 10px;white-space:nowrap" onclick="addContact()">+ أضف</button>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeModal('clientModal')">إلغاء</button>
+      <button class="btn-primary" id="clientSaveBtn" onclick="saveClient()">💾 حفظ</button>
+    </div>
+  </div>
+</div>
+
+<!-- DETAIL MODAL -->
+<div class="overlay" id="detailModal">
+  <div class="modal detail-modal" style="max-width:640px">
+    <div id="detailContent"></div>
+  </div>
+</div>
+
+<!-- IMPORT MODAL -->
+<div class="overlay" id="importModal">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">📥 استيراد Excel</div><button class="modal-close" onclick="closeModal('importModal')">×</button></div>
+    <div class="modal-body">
+      <div style="background:var(--bg3);border-radius:10px;padding:12px;margin-bottom:14px;font-size:12px;color:var(--muted);line-height:1.8">
+        <div style="font-weight:700;color:var(--text);margin-bottom:4px">📋 تعليمات</div>
+        <div>• Excel/CSV عادي: فيه أسماء شركات - اختر قطاع/منطقة</div>
+        <div>• Google Contacts CSV: يستورد الشركات مع جهات الاتصال تلقائياً</div>
+      </div>
+      <div class="form-group"><label>نوع الملف</label>
+        <select class="form-input" id="imp_filetype" onchange="toggleImportType()">
+          <option value="excel">Excel / CSV عادي (أسماء شركات)</option>
+          <option value="google">Google Contacts CSV</option>
+        </select>
+      </div>
+      <div id="imp_excel_options">
+      <div class="form-group"><label>القطاع الصناعي (اختياري)</label>
+        <select class="form-input" id="imp_industry">
+          <option value="">لا تغيير</option>
+          <option>Aviation</option><option>Cement &amp; Mining</option><option>Consultants</option><option>Contractors</option><option>Facilities HVAC</option><option>Fertilizers &amp; Chemicals</option><option>Food &amp; Pharmaceutical</option><option>General Industry</option><option>Heavy Equipment</option><option>Marine</option><option>Military</option><option>OEM</option><option>Oil &amp; Gas</option><option>Paper</option><option>Petrochemicals &amp; Refineries</option><option>Power Generation</option><option>Renewable Energy</option><option>Steel</option><option>Sugar</option><option>Water &amp; Waste Water</option>
+        </select>
+      </div>
+      <div class="form-group"><label>المنطقة (اختياري)</label>
+        <select class="form-input" id="imp_region">
+          <option value="">لا تغيير</option>
+          <option>القاهرة</option><option>الجيزة</option><option>الإسكندرية</option><option>الدقهلية</option><option>البحر الأحمر</option><option>البحيرة</option><option>الفيوم</option><option>الغربية</option><option>الإسماعيلية</option><option>المنوفية</option><option>المنيا</option><option>القليوبية</option><option>الوادي الجديد</option><option>السويس</option><option>أسوان</option><option>أسيوط</option><option>بني سويف</option><option>بورسعيد</option><option>دمياط</option><option>الشرقية</option><option>جنوب سيناء</option><option>كفر الشيخ</option><option>مطروح</option><option>الأقصر</option><option>قنا</option><option>شمال سيناء</option><option>سوهاج</option><option>السادس من أكتوبر</option><option>العاشر من رمضان</option><option>أخرى</option>
+        </select>
+      </div>
+      <div class="form-group"><label>ملف Excel *</label><input type="file" accept=".xlsx,.xls" id="imp_file" class="form-input" style="direction:ltr"></div>
+      <div style="display:flex;gap:16px">
+        <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer"><input type="radio" name="impMode" value="update" checked> تحديث موجودين</label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer"><input type="radio" name="impMode" value="add"> إضافة جدد</label>
+      </div>
+      </div>
+      <div id="imp_google_options" style="display:none">
+        <div style="background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.2);border-radius:10px;padding:12px;font-size:12px;color:var(--muted);line-height:1.8">
+          <div style="font-weight:700;color:var(--blue);margin-bottom:4px">📱 Google Contacts CSV</div>
+          <div>• البرنامج هيجمع الأشخاص اللي عندهم نفس الشركة في عميل واحد</div>
+          <div>• كل شخص هيتحفظ كجهة اتصال مع اسمه ومنصبه وموبايله وإيميله</div>
+          <div>• الشركات الموجودة هتتحدث جهات اتصالها</div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeModal('importModal')">إلغاء</button>
+      <button class="btn-primary" onclick="runImport()">📥 تنفيذ</button>
+    </div>
+  </div>
+</div>
+
+<!-- EXPORT MODAL -->
+<div class="overlay" id="exportModal">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">📤 تصدير Excel</div><button class="modal-close" onclick="closeModal('exportModal')">×</button></div>
+    <div class="modal-body">
+      <div class="form-group"><label>فلتر بالمنطقة</label>
+        <select class="form-input" id="exp_region">
+          <option value="">كل المناطق</option>
+          <option>القاهرة</option><option>الجيزة</option><option>الإسكندرية</option><option>الدقهلية</option><option>البحر الأحمر</option><option>البحيرة</option><option>الفيوم</option><option>الغربية</option><option>الإسماعيلية</option><option>المنوفية</option><option>المنيا</option><option>القليوبية</option><option>الوادي الجديد</option><option>السويس</option><option>أسوان</option><option>أسيوط</option><option>بني سويف</option><option>بورسعيد</option><option>دمياط</option><option>الشرقية</option><option>جنوب سيناء</option><option>كفر الشيخ</option><option>مطروح</option><option>الأقصر</option><option>قنا</option><option>شمال سيناء</option><option>سوهاج</option><option>السادس من أكتوبر</option><option>العاشر من رمضان</option><option>أخرى</option>
+        </select>
+      </div>
+      <div class="form-group"><label>فلتر بالقطاع</label>
+        <select class="form-input" id="exp_industry">
+          <option value="">كل القطاعات</option>
+          <option>Aviation</option><option>Cement &amp; Mining</option><option>Consultants</option><option>Contractors</option><option>Facilities HVAC</option><option>Fertilizers &amp; Chemicals</option><option>Food &amp; Pharmaceutical</option><option>General Industry</option><option>Heavy Equipment</option><option>Marine</option><option>Military</option><option>OEM</option><option>Oil &amp; Gas</option><option>Paper</option><option>Petrochemicals &amp; Refineries</option><option>Power Generation</option><option>Renewable Energy</option><option>Steel</option><option>Sugar</option><option>Water &amp; Waste Water</option>
+        </select>
+      </div>
+      <div class="form-group"><label>البيانات المصدرة</label>
+        <select class="form-input" id="exp_type">
+          <option value="all">كل البيانات</option>
+          <option value="emails">الإيميلات فقط (للتسويق)</option>
+          <option value="phones">أرقام الموبايل فقط</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeModal('exportModal')">إلغاء</button>
+      <button class="btn-primary" onclick="runExport()">📤 تصدير</button>
+    </div>
+  </div>
+</div>
+
+<!-- USER MODAL -->
+<div class="overlay" id="userModal">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title" id="userModalTitle">＋ مستخدم جديد</div><button class="modal-close" onclick="closeModal('userModal')">×</button></div>
+    <div class="modal-body">
+      <div class="form-group"><label>الاسم *</label><input class="form-input" id="u_name" placeholder="اسم المستخدم"></div>
+      <div class="form-group"><label>اسم الدخول / الإيميل *</label><input class="form-input" id="u_email" placeholder="ahmed أو ahmed@co.com" style="direction:ltr;text-align:right"></div>
+      <div class="form-group"><label>كلمة السر *</label><input type="password" class="form-input" id="u_pass" placeholder="كلمة السر"></div>
+      <div class="form-group"><label>الدور الوظيفي</label>
+        <select class="form-input" id="u_role" onchange="onRoleChange()">
+          <option>مندوب مبيعات</option><option>مدير مبيعات</option><option>أدمن</option>
+        </select>
+      </div>
+      <div class="form-group" id="u_region_group"><label>المنطقة (للمندوب)</label>
+        <select class="form-input" id="u_region">
+          <option value="">غير محدد</option>
+          <option>القاهرة</option><option>الجيزة</option><option>الإسكندرية</option><option>الدقهلية</option><option>البحر الأحمر</option><option>البحيرة</option><option>الفيوم</option><option>الغربية</option><option>الإسماعيلية</option><option>المنوفية</option><option>المنيا</option><option>القليوبية</option><option>الوادي الجديد</option><option>السويس</option><option>أسوان</option><option>أسيوط</option><option>بني سويف</option><option>بورسعيد</option><option>دمياط</option><option>الشرقية</option><option>جنوب سيناء</option><option>كفر الشيخ</option><option>مطروح</option><option>الأقصر</option><option>قنا</option><option>شمال سيناء</option><option>سوهاج</option><option>السادس من أكتوبر</option><option>العاشر من رمضان</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeModal('userModal')">إلغاء</button>
+      <button class="btn-primary" onclick="saveUser()">💾 حفظ</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- ============================================================
+     JAVASCRIPT
+============================================================ -->
+<script>
+/* ============================================================
+   CONFIG & SUPABASE
+============================================================ */
+const SURL='https://nbdensvoyvhpxsekiiqn.supabase.co';
+const SKEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5iZGVuc3ZveXZocHhzZWtpaXFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwNDg2ODEsImV4cCI6MjA4ODYyNDY4MX0.3YWMjqRyJ4Ogw-BY3LaLacRjfvJrAdGjj0gIF8iiXV8';
+
+async function sb(path, opts={}){
+  const res=await fetch(`${SURL}/rest/v1/${path}`,{
+    headers:{'apikey':SKEY,'Authorization':`Bearer ${SKEY}`,'Content-Type':'application/json','Prefer':'return=representation',...(opts.headers||{})},
+    ...opts
+  });
+  if(!res.ok){const e=await res.json();throw new Error(JSON.stringify(e));}
+  const txt=await res.text();
+  return txt?JSON.parse(txt):[];
+}
+
+/* ============================================================
+   INDUSTRY CONFIG
+============================================================ */
+const IND={
+  'Aviation':{cls:'ind-other',icon:'✈️'},
+  'Cement & Mining':{cls:'ind-cement',icon:'🏗️'},
+  'Consultants':{cls:'ind-other',icon:'💼'},
+  'Contractors':{cls:'ind-other',icon:'🔧'},
+  'Facilities HVAC':{cls:'ind-other',icon:'🌡️'},
+  'Fertilizers & Chemicals':{cls:'ind-chemical',icon:'🧪'},
+  'Food & Pharmaceutical':{cls:'ind-food',icon:'🌾'},
+  'General Industry':{cls:'ind-other',icon:'🏭'},
+  'Heavy Equipment':{cls:'ind-other',icon:'🚜'},
+  'Marine':{cls:'ind-water',icon:'⚓'},
+  'Military':{cls:'ind-other',icon:'🎖️'},
+  'OEM':{cls:'ind-other',icon:'⚙️'},
+  'Oil & Gas':{cls:'ind-petroleum',icon:'🛢️'},
+  'Paper':{cls:'ind-other',icon:'📄'},
+  'Petrochemicals & Refineries':{cls:'ind-chemical',icon:'⚗️'},
+  'Power Generation':{cls:'ind-other',icon:'⚡'},
+  'Renewable Energy':{cls:'ind-other',icon:'♻️'},
+  'Steel':{cls:'ind-steel',icon:'🔩'},
+  'Sugar':{cls:'ind-food',icon:'🍬'},
+  'Water & Waste Water':{cls:'ind-water',icon:'💧'},
+  'أخرى':{cls:'ind-other',icon:'📦'}
+};
+
+/* ============================================================
+   STATE
+============================================================ */
+let CU=null; // current user
+let clients=[];
+let allUsers=[];
+let filteredClients=[];
+let currentView='grid';
+let assignMode=false;
+let selectedClients=new Set();
+let editingClientId=null;
+let cmContacts=[]; // client modal contacts
+
+/* ============================================================
+   UTILS
+============================================================ */
+function gc(s){const h=['#C8102E','#1D4ED8','#059669','#D97706','#7C3AED','#0891B2'];let n=0;for(const c of(s||''))n+=c.charCodeAt(0);return h[n%h.length];}
+
+function showToast(msg,type='success'){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.className=`toast ${type} show`;
+  setTimeout(()=>t.classList.remove('show'),2800);
+}
+
+function openModal(id){document.getElementById(id).classList.add('open');}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+
+/* ============================================================
+   LOGIN
+============================================================ */
+async function doLogin(){
+  const email=document.getElementById('loginEmail').value.trim();
+  const pass=document.getElementById('loginPass').value.trim();
+  const err=document.getElementById('loginError');
+  const btn=document.getElementById('loginBtn');
+  if(!email||!pass){err.textContent='ادخل اسم المستخدم وكلمة السر';return;}
+  btn.textContent='جاري التحقق...';btn.disabled=true;
+  try{
+    const users=await sb(`users?email=eq.${encodeURIComponent(email)}&password=eq.${encodeURIComponent(pass)}&active=eq.true`);
+    if(!users.length){err.textContent='بيانات خاطئة أو الحساب موقف';btn.textContent='دخول ←';btn.disabled=false;return;}
+    CU=users[0];
+    localStorage.setItem('cu',JSON.stringify(CU));
+    btn.textContent='دخول ←';btn.disabled=false;
+    startApp();
+  }catch(e){
+    console.error('Login error:',e);
+    err.textContent='خطأ في الاتصال - تأكد من الإنترنت';
+    btn.textContent='دخول ←';btn.disabled=false;
+  }
+}
+
+function doLogout(){
+  localStorage.removeItem('cu');
+  CU=null;clients=[];
+  document.getElementById('loginEmail').value='';
+  document.getElementById('loginPass').value='';
+  document.getElementById('loginError').textContent='';
+  document.getElementById('loginBtn').textContent='دخول ←';
+  document.getElementById('loginBtn').disabled=false;
+  document.getElementById('appScreen').style.display='none';
+  document.getElementById('loginScreen').classList.add('active');
+}
+
+/* ============================================================
+   APP STARTUP
+============================================================ */
+function startApp(){
+  document.getElementById('loginScreen').classList.remove('active');
+  document.getElementById('appScreen').style.display='flex';
+  document.getElementById('loginScreen').style.display='none';
+  // Set user info
+  document.getElementById('userAv').textContent=CU.name[0];
+  document.getElementById('userName').textContent=CU.name;
+  document.getElementById('userRole').textContent=CU.role;
+  // Role-based UI
+  const isAdmin=CU.role==='أدمن';
+  const isManager=CU.role==='مدير مبيعات';
+  if(isAdmin||isManager){
+    ['importBtn','exportBtn','assignBtn','importBtnM','exportBtnM','assignBtnM'].forEach(id=>{
+      const el=document.getElementById(id);if(el)el.style.display='flex';
+    });
+    document.getElementById('nav_stats').style.display='flex';
+    document.getElementById('mn_stats').style.display='flex';
+  }
+  if(isAdmin){
+    document.getElementById('nav_users').style.display='flex';
+    document.getElementById('mn_users').style.display='flex';
+  }
+  // Mobile logo
+  document.getElementById('mobileLogo').style.display='none';
+  // Load data
+  loadClients();
+  loadRepsFilter();
+}
+
+// Auto-login from session
+window.addEventListener('load',()=>{
+  const saved=localStorage.getItem('cu');
+  if(saved){CU=JSON.parse(saved);startApp();}
+});
+
+/* ============================================================
+   PAGE NAVIGATION
+============================================================ */
+function showPage(page){
+  ['clients','history','stats','users'].forEach(p=>{
+    document.getElementById(`page_${p}`).style.display=p===page?'block':'none';
+    const nav=document.getElementById(`nav_${p}`);
+    if(nav)nav.classList.toggle('active',p===page);
+    const mn=document.getElementById(`mn_${p}`);
+    if(mn)mn.classList.toggle('active',p===page);
+  });
+  // Page title
+  const titles={clients:'قائمة <span>العملاء</span>',history:'سجل <span>التعاملات</span>',stats:'لوحة <span>الإحصائيات</span>',users:'إدارة <span>المستخدمين</span>'};
+  document.getElementById('pageTitle').innerHTML=titles[page]||'';
+  // Show/hide add button & search
+  document.getElementById('addClientBtn').style.display=page==='clients'?'flex':'none';
+  document.getElementById('topbarActions').querySelector('.search-wrap').style.display=page==='clients'?'flex':'none';
+  if(page==='history')renderHistory();
+  if(page==='stats')renderStats();
+  if(page==='users')loadUsers();
+  closeMobileMenu();
+}
+
+/* ============================================================
+   MOBILE MENU
+============================================================ */
+function toggleMobileMenu(){
+  document.getElementById('mobileMenu').classList.toggle('open');
+}
+function closeMobileMenu(){
+  document.getElementById('mobileMenu').classList.remove('open');
+}
+document.addEventListener('click',e=>{
+  const menu=document.getElementById('mobileMenu');
+  const btn=document.getElementById('mobileMenuBtn');
+  if(menu&&btn&&!menu.contains(e.target)&&!btn.contains(e.target)){
+    menu.classList.remove('open');
+  }
+});
+
+/* ============================================================
+   LOAD CLIENTS
+============================================================ */
+async function loadClients(){
+  document.getElementById('clientsContainer').innerHTML='<div class="loading"><div class="spinner"></div> جاري التحميل...</div>';
+  try{
+    // Load clients without history first (faster)
+    let base=`clients?select=*&order=created_at.desc`;
+    if(CU.role==='مندوب مبيعات')base+=`&assigned_to=eq.${encodeURIComponent(CU.id)}`;
+    let all=[];let from=0;
+    while(true){
+      const page=await sb(base+`&limit=1000&offset=${from}`);
+      all=all.concat(page);
+      if(page.length<1000)break;
+      from+=1000;
+    }
+    clients=all;
+    document.getElementById('clientsBadge').textContent=clients.length;
+    renderClients();
+    // Load history in background
+    loadAllHistory();
+  }catch(e){
+    console.error(e);
+    document.getElementById('clientsContainer').innerHTML='<div class="empty-state"><div class="empty-icon">⚠️</div><p>خطأ في التحميل</p></div>';
+  }
+}
+
+async function loadAllHistory(){
+  try{
+    let allH=[];let from=0;
+    while(true){
+      const page=await sb(`history?select=*&order=created_at.desc&limit=1000&offset=${from}`);
+      allH=allH.concat(page);
+      if(page.length<1000)break;
+      from+=1000;
+    }
+    // Attach history to clients
+    const hMap={};
+    allH.forEach(h=>{
+      if(!hMap[h.client_id])hMap[h.client_id]=[];
+      hMap[h.client_id].push(h);
+    });
+    clients=clients.map(c=>({...c,history:hMap[c.id]||[]}));
+    renderClients();
+  }catch(e){console.error('History load error:',e);}
+}
+
+async function loadRepsFilter(){
+  try{
+    const users=await sb('users?role=eq.مندوب مبيعات&active=eq.true&select=id,name');
+    const sel=document.getElementById('filterRep');
+    sel.innerHTML='<option value="">👤 كل المندوبين</option>'+users.map(u=>`<option value="${u.id}">${u.name}</option>`).join('');
+    const asel=document.getElementById('assignTo');
+    asel.innerHTML='<option value="">اختر المندوب...</option>'+users.map(u=>`<option value="${u.id}">${u.name}</option>`).join('');
+  }catch(e){}
+}
+
+/* ============================================================
+   RENDER CLIENTS
+============================================================ */
+function clearFilters(){
+  document.getElementById('filterRegion').value='';
+  document.getElementById('filterIndustry').value='';
+  document.getElementById('filterRep').value='';
+  document.getElementById('searchInput').value='';
+  renderClients();
+}
+
+let visibleCount=50;
+const PAGE_SIZE=50;
+
+function renderClients(){
+  const q=document.getElementById('searchInput').value.toLowerCase();
+  const fReg=document.getElementById('filterRegion').value;
+  const fInd=document.getElementById('filterIndustry').value;
+  const fRep=document.getElementById('filterRep').value;
+  filteredClients=clients.filter(c=>{
+    const matchQ=!q||(c.company||'').toLowerCase().includes(q)||(c.engineer||'').toLowerCase().includes(q)||(c.region||'').toLowerCase().includes(q);
+    const matchReg=!fReg||(c.region||'')===fReg;
+    const matchInd=!fInd||(c.industry||'')===fInd;
+    const matchRep=!fRep||(c.assigned_to||'')===fRep;
+    return matchQ&&matchReg&&matchInd&&matchRep;
+  });
+  visibleCount=PAGE_SIZE;
+  renderVisible();
+}
+
+function renderVisible(){
+  const con=document.getElementById('clientsContainer');
+  if(!clients.length){con.innerHTML='<div class="empty-state"><div class="empty-icon">🏭</div><p>لا يوجد عملاء بعد</p></div>';return;}
+  if(!filteredClients.length){con.innerHTML='<div class="empty-state"><div class="empty-icon">🔍</div><p>لا توجد نتائج</p></div>';return;}
+  const visible=filteredClients.slice(0,visibleCount);
+  const hasMore=filteredClients.length>visibleCount;
+  if(currentView==='grid'){
+    con.className='clients-grid';
+    con.innerHTML=visible.map((c,i)=>renderCard(c,i)).join('');
+  }else{
+    con.className='clients-list';
+    con.innerHTML=`<div class="list-header"><div>الشركة</div><div class="list-cell-eng">المهندس</div><div class="list-cell-ind">القطاع</div><div class="list-cell-reg">المنطقة</div><div>تواصل</div></div>`+
+    visible.map((c,i)=>renderListRow(c,i)).join('');
+  }
+  // Add load more button
+  if(hasMore){
+    const more=document.createElement('div');
+    more.style.cssText='text-align:center;padding:20px;';
+    more.innerHTML=`<button class="btn-secondary" onclick="loadMore()" style="padding:10px 24px">
+      تحميل المزيد (${filteredClients.length-visibleCount} متبقي)
+    </button>`;
+    con.appendChild(more);
+  }
+  // Show count
+  const countEl=document.getElementById('clientsBadge');
+  if(countEl)countEl.textContent=clients.length;
+}
+
+function loadMore(){
+  visibleCount+=PAGE_SIZE;
+  renderVisible();
+  // Scroll to where we were
+  window.scrollBy(0,-100);
+}
+
+function setView(v,el){
+  currentView=v;
+  document.querySelectorAll('.view-tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  renderVisible();
+}
+
+function renderCard(c,i){
+  const ind=IND[c.industry]||IND['أخرى'];
+  const sel=selectedClients.has(c.id);
+  const h=(c.history||[]).length;
+  return`<div class="client-card${sel?' selected':''}" style="animation-delay:${i*.03}s" onclick="${assignMode?`toggleSelect('${c.id}',event)`:`openDetail('${c.id}')`}">
+    <div class="cc-header">
+      ${assignMode?`<div class="cc-check">${sel?'✓':''}</div>`:''}
+      <div class="cc-avatar" style="background:${gc(c.company)}">${(c.company||'?')[0]}</div>
+      <div style="flex:1;min-width:0">
+        <div class="cc-name">${c.company}</div>
+        <div class="cc-sub">📍 ${c.region||'—'}</div>
+      </div>
+    </div>
+    <div><span class="ind-badge ${ind.cls}">${ind.icon} ${c.industry||'—'}</span></div>
+    <div class="cc-info"><span>👷 ${c.engineer||'—'}</span><span>📋 ${h} تعامل</span></div>
+    <div class="cc-actions" onclick="event.stopPropagation()">
+      <button class="action-btn wa" onclick="doWa('${c.whatsapp||c.phone||''}','${c.company}')">💬<span>واتساب</span></button>
+      <button class="action-btn call" onclick="doCall('${c.phone||''}')">📞<span>اتصال</span></button>
+      ${c.email?`<button class="action-btn mail" onclick="doMail('${c.email}','${c.company}')">📧<span>إيميل</span></button>`:''}
+      <button class="action-btn hist" onclick="openDetail('${c.id}')">📋<span>تاريخ</span></button>
+    </div>
+  </div>`;
+}
+
+function renderListRow(c,i){
+  const ind=IND[c.industry]||IND['أخرى'];
+  const h=(c.history||[]).length;
+  return`<div class="list-row" onclick="openDetail('${c.id}')">
+    <div class="list-company">
+      <div class="list-av" style="background:${gc(c.company)}">${(c.company||'?')[0]}</div>
+      <div>
+        <div class="list-name">${c.company}</div>
+        <div class="list-sub">${h} تعامل • 📍 ${c.region||'—'}</div>
+      </div>
+    </div>
+    <div class="list-cell list-cell-eng">👷 ${c.engineer||'—'}</div>
+    <div class="list-cell list-cell-ind"><span class="ind-badge ${ind.cls}" style="font-size:10px">${ind.icon} ${c.industry||'—'}</span></div>
+    <div class="list-cell list-cell-reg">📍 ${c.region||'—'}</div>
+    <div class="list-actions" onclick="event.stopPropagation()">
+      <button class="btn-icon" onclick="doWa('${c.whatsapp||c.phone||''}','${c.company}')">💬</button>
+      <button class="btn-icon" onclick="doCall('${c.phone||''}')">📞</button>
+    </div>
+  </div>`;
+}
+
+/* ============================================================
+   ASSIGN MODE
+============================================================ */
+function toggleAssignMode(){
+  assignMode=!assignMode;
+  selectedClients.clear();
+  document.getElementById('assignBar').classList.toggle('visible',assignMode);
+  renderClients();
+  if(assignMode)loadRepsFilter();
+}
+
+function toggleSelect(id,e){
+  e.stopPropagation();
+  selectedClients.has(id)?selectedClients.delete(id):selectedClients.add(id);
+  document.getElementById('selCount').textContent=`${selectedClients.size} عميل محدد`;
+  const card=document.querySelector(`[data-id="${id}"]`);
+  renderClients();
+}
+
+function selectAllFiltered(){
+  filteredClients.forEach(c=>selectedClients.add(c.id));
+  document.getElementById('selCount').textContent=`${selectedClients.size} عميل محدد`;
+  renderClients();
+}
+
+async function doAssign(){
+  const repId=document.getElementById('assignTo').value;
+  if(!repId){showToast('❌ اختر مندوب','error');return;}
+  if(!selectedClients.size){showToast('❌ حدد عملاء أولاً','error');return;}
+  try{
+    for(const id of selectedClients){
+      await sb(`clients?id=eq.${id}`,{method:'PATCH',body:JSON.stringify({assigned_to:repId})});
+    }
+    showToast(`✅ تم توزيع ${selectedClients.size} عميل`,'success');
+    selectedClients.clear();toggleAssignMode();loadClients();
+  }catch(e){showToast('❌ خطأ في التوزيع','error');}
+}
+
+async function doBulkUpdate(){
+  const industry=document.getElementById('bulkIndustry').value;
+  const region=document.getElementById('bulkRegion').value;
+  if(!industry&&!region){showToast('❌ اختر قطاع أو منطقة للتحديث','error');return;}
+  if(!selectedClients.size){showToast('❌ حدد عملاء أولاً','error');return;}
+  const updateData={};
+  if(industry)updateData.industry=industry;
+  if(region)updateData.region=region;
+  try{
+    for(const id of selectedClients){
+      await sb(`clients?id=eq.${id}`,{method:'PATCH',body:JSON.stringify(updateData)});
+    }
+    showToast(`✅ تم تحديث ${selectedClients.size} عميل`,'success');
+    document.getElementById('bulkIndustry').value='';
+    document.getElementById('bulkRegion').value='';
+    selectedClients.clear();toggleAssignMode();loadClients();
+  }catch(e){showToast('❌ خطأ في التحديث','error');}
+}
+
+async function doDeleteSelected(){
+  if(!selectedClients.size){showToast('❌ حدد عملاء أولاً','error');return;}
+  if(!confirm(`هل أنت متأكد من حذف ${selectedClients.size} عميل؟`))return;
+  try{
+    for(const id of selectedClients){
+      await sb(`clients?id=eq.${id}`,{method:'DELETE'});
+    }
+    showToast(`✅ تم حذف ${selectedClients.size} عميل`,'success');
+    selectedClients.clear();toggleAssignMode();loadClients();
+  }catch(e){showToast('❌ خطأ في الحذف','error');}
+}
+
+/* ============================================================
+   ADD / EDIT CLIENT
+============================================================ */
+function openAddClient(){
+  editingClientId=null;
+  cmContacts=[];
+  document.getElementById('clientModalTitle').textContent='＋ عميل جديد';
+  document.getElementById('clientSaveBtn').textContent='💾 حفظ';
+  ['cm_company','cm_address','cm_notes'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('cm_industry').value='';
+  document.getElementById('cm_region').value='';
+  renderContactsList();
+  openModal('clientModal');
+}
+
+function openEditClient(id){
+  const c=clients.find(x=>x.id===id);if(!c)return;
+  editingClientId=id;
+  document.getElementById('clientModalTitle').textContent='✏️ تعديل بيانات العميل';
+  document.getElementById('clientSaveBtn').textContent='💾 حفظ التعديلات';
+  document.getElementById('cm_company').value=c.company||'';
+  document.getElementById('cm_industry').value=c.industry||'';
+  document.getElementById('cm_region').value=c.region||'';
+  document.getElementById('cm_address').value=c.address||'';
+  document.getElementById('cm_notes').value=c.notes||'';
+  // Load contacts
+  try{cmContacts=c.contacts?JSON.parse(c.contacts):[];}catch(e){cmContacts=[];}
+  if(!cmContacts.length&&c.engineer&&c.engineer!=='غير محدد'){
+    cmContacts=[{name:c.engineer,dept:'',title:'',phone:c.phone||'',email:c.email||''}];
+  }
+  renderContactsList();
+  closeModal('detailModal');
+  openModal('clientModal');
+}
+
+async function saveClient(){
+  const btn=document.getElementById('clientSaveBtn');
+  if(btn.disabled)return;
+  const company=document.getElementById('cm_company').value.trim();
+  if(!company){showToast('❌ اسم الشركة مطلوب','error');return;}
+  btn.disabled=true;btn.textContent='⏳ جاري الحفظ...';
+  const firstContact=cmContacts[0]||null;
+  const data={
+    company,
+    industry:document.getElementById('cm_industry').value||'أخرى',
+    region:document.getElementById('cm_region').value||'',
+    address:document.getElementById('cm_address').value.trim(),
+    notes:document.getElementById('cm_notes').value.trim(),
+    engineer:firstContact?firstContact.name:'غير محدد',
+    phone:firstContact?firstContact.phone||'غير محدد':'غير محدد',
+    email:firstContact?firstContact.email||'':'',
+    contacts:cmContacts.length?JSON.stringify(cmContacts):null
+  };
+  try{
+    if(editingClientId){
+      await sb(`clients?id=eq.${editingClientId}`,{method:'PATCH',body:JSON.stringify(data)});
+      showToast('✅ تم تعديل بيانات العميل','success');
+    }else{
+      data.added_by=CU.id;
+      await sb('clients',{method:'POST',body:JSON.stringify(data)});
+      showToast('✅ تم إضافة العميل','success');
+    }
+    closeModal('clientModal');
+    loadClients();
+  }catch(e){
+    console.error(e);
+    showToast('❌ خطأ في الحفظ','error');
+  }finally{
+    btn.disabled=false;
+    btn.textContent=editingClientId?'💾 حفظ التعديلات':'💾 حفظ';
+  }
+}
+
+/* ============================================================
+   CONTACTS MANAGEMENT
+============================================================ */
+function addContact(){
+  const name=document.getElementById('cc_name').value.trim();
+  if(!name){showToast('❌ اكتب اسم جهة الاتصال','error');return;}
+  if(cmContacts.length>=7){showToast('❌ الحد الأقصى 7 جهات اتصال','error');return;}
+  cmContacts.push({
+    name,
+    dept:document.getElementById('cc_dept').value.trim(),
+    title:document.getElementById('cc_title').value.trim(),
+    phone:document.getElementById('cc_phone').value.trim(),
+    email:document.getElementById('cc_email').value.trim()
+  });
+  ['cc_name','cc_dept','cc_title','cc_phone','cc_email'].forEach(id=>document.getElementById(id).value='');
+  renderContactsList();
+}
+
+function removeContact(idx){
+  cmContacts.splice(idx,1);
+  renderContactsList();
+}
+
+function renderContactsList(){
+  const con=document.getElementById('cm_contacts_list');
+  if(!cmContacts.length){
+    con.innerHTML='<div style="color:var(--muted);font-size:12px;text-align:center;padding:8px">لا يوجد جهات اتصال</div>';
+    return;
+  }
+  con.innerHTML=`<table class="contacts-table">
+    <tr><th>الاسم</th><th>القسم</th><th>المنصب</th><th>الموبايل</th><th>الإيميل</th><th></th></tr>
+    ${cmContacts.map((c,i)=>`<tr>
+      <td><strong>${c.name}</strong></td>
+      <td>${c.dept||'—'}</td>
+      <td>${c.title||'—'}</td>
+      <td style="direction:ltr">${c.phone||'—'}</td>
+      <td style="direction:ltr;font-size:11px">${c.email||'—'}</td>
+      <td>
+        ${c.phone?`<button class="btn-icon" onclick="doCall('${c.phone}')">📞</button>`:''}
+        ${c.email?`<button class="btn-icon" onclick="doMail('${c.email}','')">📧</button>`:''}
+        <button class="btn-icon" style="color:var(--red)" onclick="removeContact(${i})">🗑️</button>
+      </td>
+    </tr>`).join('')}
+  </table>`;
+}
+
+/* ============================================================
+   DETAIL VIEW
+============================================================ */
+async function openDetail(id){
+  const c=clients.find(x=>x.id===id);if(!c)return;
+  const ind=IND[c.industry]||IND['أخرى'];
+  const history=(c.history||[]).slice().reverse();
+  // Get rep name
+  let repName='غير محدد';
+  if(c.assigned_to){
+    try{const r=await sb(`users?id=eq.${c.assigned_to}&select=name`);if(r.length)repName=r[0].name;}catch(e){}
+  }
+  // Parse contacts
+  let contacts=[];
+  try{contacts=c.contacts?JSON.parse(c.contacts):[];}catch(e){}
+  if(!contacts.length&&c.engineer&&c.engineer!=='غير محدد'){
+    contacts=[{name:c.engineer,dept:'',title:'',phone:c.phone||'',email:c.email||''}];
+  }
+
+  document.getElementById('detailContent').innerHTML=`
+    <div class="detail-header">
+      <div class="detail-avatar" style="background:${gc(c.company)}">${(c.company||'?')[0]}</div>
+      <div style="flex:1;min-width:0">
+        <div class="detail-company">${c.company}</div>
+        <div class="detail-sub">${ind.icon} ${c.industry||'—'} &nbsp;•&nbsp; 📍 ${c.region||'—'}</div>
+      </div>
+      <button class="modal-close" onclick="closeModal('detailModal')">×</button>
+    </div>
+    <div class="detail-btns">
+      ${c.phone?`<button class="detail-btn wa" onclick="doWa('${c.whatsapp||c.phone||''}','${c.company}')">💬 واتساب</button>`:''}
+      ${c.phone?`<button class="detail-btn call" onclick="doCall('${c.phone||''}')">📞 اتصال</button>`:''}
+      ${c.address||c.region?`<button class="detail-btn map" onclick="doMap('${c.address||c.region||''}')">🗺️ خريطة</button>`:''}
+      ${c.email?`<button class="detail-btn mail" onclick="doMail('${c.email}','${c.company}')">📧 إيميل</button>`:''}
+      <button class="detail-btn edit" onclick="openEditClient('${c.id}')">✏️ تعديل</button>
+      <button class="detail-btn del" onclick="deleteClient('${c.id}')">🗑️ حذف</button>
+    </div>
+    <div class="detail-info-grid">
+      <div class="info-item"><div class="info-label">المندوب</div><div class="info-value" style="color:var(--green)">👤 ${repName}</div></div>
+      <div class="info-item"><div class="info-label">تاريخ الإضافة</div><div class="info-value">${new Date(c.created_at).toLocaleDateString('ar-EG')}</div></div>
+      ${c.address?`<div class="info-item" style="grid-column:1/-1"><div class="info-label">العنوان</div><div class="info-value">📍 ${c.address}</div></div>`:''}
+      ${c.notes?`<div class="info-item" style="grid-column:1/-1"><div class="info-label">ملاحظات</div><div class="info-value" style="font-weight:400;font-size:12px">${c.notes}</div></div>`:''}
+    </div>
+    ${contacts.length?`
+    <div class="sec-title">👥 جهات الاتصال</div>
+    <div style="padding:0 24px 10px">
+      ${contacts.map(ct=>`
+        <div style="background:var(--bg3);border-radius:12px;padding:12px 14px;margin-bottom:8px;">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+            <div>
+              <div style="font-size:13px;font-weight:700">${ct.name||'—'}</div>
+              ${ct.title?`<div style="font-size:11px;color:var(--muted)">${ct.title}</div>`:''}
+              ${ct.dept?`<div style="font-size:11px;color:var(--muted)">🏢 ${ct.dept}</div>`:''}
+            </div>
+            <div style="display:flex;gap:6px">
+              ${ct.phone?`<button class="btn-icon" onclick="doCall('${ct.phone}')">📞</button>`:''}
+              ${ct.phone?`<button class="btn-icon" onclick="doWa('${ct.phone}','${c.company}')">💬</button>`:''}
+              ${ct.email?`<button class="btn-icon" onclick="doMail('${ct.email}','${c.company}')">📧</button>`:''}
+            </div>
+          </div>
+          ${ct.phone?`<div style="font-size:12px;color:var(--muted);direction:ltr;text-align:right">📞 ${ct.phone}</div>`:''}
+          ${ct.email?`<div style="font-size:12px;color:var(--muted);direction:ltr;text-align:right">📧 ${ct.email}</div>`:''}
+        </div>`).join('')}
+    </div>`:''}
+    <div class="sec-title">📋 سجل التعاملات (${history.length})</div>
+    <div class="history-list">
+      ${!history.length?'<div style="color:var(--muted);font-size:13px;text-align:center;padding:12px">لا يوجد تعاملات بعد</div>':
+        history.map(h=>`<div class="history-item">
+          <div class="history-dot" style="background:${h.type==='بيع'?'var(--gold)':h.type==='زيارة'?'var(--green)':'var(--blue)'}"></div>
+          <div>
+            <div class="history-type">${h.type}</div>
+            <div class="history-title">${h.title||'—'}</div>
+            ${h.note?`<div class="history-note">${h.note}</div>`:''}
+            <div class="history-date">📅 ${new Date(h.created_at).toLocaleDateString('ar-EG')} — 👤 ${h.created_by_name||'—'}</div>
+          </div>
+        </div>`).join('')}
+    </div>
+    <div class="add-history">
+      <div class="add-history-title">➕ إضافة تعامل</div>
+      <div class="history-form-row">
+        <div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px">النوع</label><select class="form-input" id="h_type"><option>زيارة</option><option>بيع</option><option>عرض سعر</option><option>متابعة</option><option>شكوى</option></select></div>
+        <div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px">التاريخ</label><input type="date" class="form-input" id="h_date" value="${new Date().toISOString().split('T')[0]}"></div>
+      </div>
+      <div style="margin-bottom:8px"><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px">العنوان / المنتج</label><input class="form-input" id="h_title" placeholder="Belzona 1111 - إصلاح ضاغط"></div>
+      <div style="margin-bottom:10px"><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px">ملاحظات</label><textarea class="form-input" id="h_note" style="min-height:60px;resize:vertical" placeholder="تفاصيل..."></textarea></div>
+      <button class="btn-primary" onclick="addHistory('${c.id}')">💾 حفظ التعامل</button>
+    </div>
+  `;
+  openModal('detailModal');
+}
+
+async function addHistory(cid){
+  const type=document.getElementById('h_type').value;
+  const title=document.getElementById('h_title').value.trim();
+  const note=document.getElementById('h_note').value.trim();
+  const date=document.getElementById('h_date').value;
+  if(!title){showToast('❌ اكتب عنوان التعامل','error');return;}
+  try{
+    await sb('history',{method:'POST',body:JSON.stringify({client_id:cid,type,title,note,created_by:CU.id,created_by_name:CU.name,created_at:new Date(date).toISOString()})});
+    showToast('✅ تم حفظ التعامل','success');
+    await loadClients();openDetail(cid);
+  }catch(e){showToast('❌ خطأ في الحفظ','error');}
+}
+
+async function deleteClient(id){
+  if(!confirm('هل أنت متأكد من حذف هذا العميل؟'))return;
+  try{
+    await sb(`history?client_id=eq.${id}`,{method:'DELETE'});
+    await sb(`clients?id=eq.${id}`,{method:'DELETE'});
+    showToast('🗑️ تم الحذف','success');
+    closeModal('detailModal');loadClients();
+  }catch(e){showToast('❌ خطأ في الحذف','error');}
+}
+
+/* ============================================================
+   HISTORY PAGE
+============================================================ */
+function renderHistory(){
+  const con=document.getElementById('historyContainer');
+  const allHistory=clients.flatMap(c=>(c.history||[]).map(h=>({...h,company:c.company,clientId:c.id}))).sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
+  if(!allHistory.length){con.innerHTML='<div class="empty-state"><div class="empty-icon">📋</div><p>لا يوجد تعاملات</p></div>';return;}
+  con.innerHTML=`<div class="history-entries">${allHistory.map(h=>`
+    <div class="history-entry" onclick="openDetail('${h.clientId}')">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div class="he-company">${h.company}</div>
+        <span class="he-type" style="color:${h.type==='بيع'?'var(--gold)':h.type==='زيارة'?'var(--green)':'var(--blue)'}">${h.type}</span>
+      </div>
+      <div class="he-title">${h.title||'—'}</div>
+      ${h.note?`<div class="he-title" style="font-weight:400">${h.note}</div>`:''}
+      <div class="he-meta">📅 ${new Date(h.created_at).toLocaleDateString('ar-EG')} — 👤 ${h.created_by_name||'—'}</div>
+    </div>`).join('')}</div>`;
+}
+
+/* ============================================================
+   STATS PAGE
+============================================================ */
+function renderStats(){
+  const con=document.getElementById('statsContainer');
+  if(!clients.length){con.innerHTML='<div class="empty-state"><div class="empty-icon">📊</div><p>لا يوجد بيانات</p></div>';return;}
+  const byInd={};clients.forEach(c=>{const k=c.industry||'غير محدد';byInd[k]=(byInd[k]||0)+1;});
+  const indSorted=Object.entries(byInd).sort((a,b)=>b[1]-a[1]);
+  const byReg={};clients.forEach(c=>{const k=c.region||'غير محدد';byReg[k]=(byReg[k]||0)+1;});
+  const regSorted=Object.entries(byReg).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  const now=new Date();
+  const thisMonthH=clients.flatMap(c=>(c.history||[]).filter(h=>{const d=new Date(h.created_at);return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();}));
+  const unassigned=clients.filter(c=>!c.assigned_to).length;
+  const maxInd=indSorted[0]?.[1]||1;
+  const maxReg=regSorted[0]?.[1]||1;
+  con.innerHTML=`
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-num">${clients.length}</div><div class="stat-label">إجمالي العملاء</div></div>
+      <div class="stat-card"><div class="stat-num" style="color:var(--green)">${thisMonthH.length}</div><div class="stat-label">تعاملات هذا الشهر</div></div>
+      <div class="stat-card"><div class="stat-num" style="color:var(--gold)">${indSorted.length}</div><div class="stat-label">قطاعات صناعية</div></div>
+      <div class="stat-card"><div class="stat-num" style="color:var(--blue)">${unassigned}</div><div class="stat-label">بدون مندوب</div></div>
+    </div>
+    <div class="charts-grid">
+      <div class="chart-card">
+        <div class="chart-title">📊 توزيع القطاعات</div>
+        ${indSorted.map(([k,v])=>`<div class="bar-row"><div class="bar-label">${k}</div><div class="bar-track"><div class="bar-fill" style="width:${(v/maxInd*100).toFixed(0)}%"></div></div><div class="bar-count">${v}</div></div>`).join('')}
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">🗺️ توزيع المناطق (أعلى 10)</div>
+        ${regSorted.map(([k,v])=>`<div class="bar-row"><div class="bar-label">${k}</div><div class="bar-track"><div class="bar-fill" style="width:${(v/maxReg*100).toFixed(0)}%;background:var(--blue)"></div></div><div class="bar-count">${v}</div></div>`).join('')}
+      </div>
+    </div>`;
+}
+
+/* ============================================================
+   IMPORT EXCEL
+============================================================ */
+function toggleImportType(){
+  const t=document.getElementById('imp_filetype').value;
+  document.getElementById('imp_excel_options').style.display=t==='excel'?'block':'none';
+  document.getElementById('imp_google_options').style.display=t==='google'?'block':'none';
+}
+
+async function runImport(){
+  const file=document.getElementById('imp_file').files[0];
+  if(!file){showToast('❌ اختر ملف أولاً','error');return;}
+  const fileType=document.getElementById('imp_filetype').value;
+  if(fileType==='google'){
+    await runGoogleImport(file);
+    return;
+  }
+  const industry=document.getElementById('imp_industry').value;
+  const region=document.getElementById('imp_region').value;
+  const mode=document.querySelector('input[name="impMode"]:checked').value;
+  if(mode==='update'&&!industry&&!region){showToast('❌ اختر قطاع أو منطقة للتحديث','error');return;}
+  const reader=new FileReader();
+  reader.onload=async function(e){
+    try{
+      const wb=XLSX.read(e.target.result,{type:'binary'});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+      let col=0;
+      const hRow=rows.find(r=>r.some(c=>c?.toString().toLowerCase().includes('company')||c?.toString().includes('الشركة')));
+      if(hRow){const idx=hRow.findIndex(c=>c?.toString().toLowerCase().includes('company')||c?.toString().includes('الشركة'));if(idx>=0)col=idx;}
+      const names=rows.map(r=>r[col]?.toString().trim()).filter(n=>n&&isNaN(n));
+      if(!names.length){showToast('❌ الملف فاضي أو لا يوجد أسماء','error');return;}
+      if(mode==='update'){
+        let updated=0;
+        const updateData={};
+        if(industry)updateData.industry=industry;
+        if(region)updateData.region=region;
+        for(const name of names){
+          try{
+            const res=await sb(`clients?company=eq.${encodeURIComponent(name)}`);
+            if(res.length){await sb(`clients?company=eq.${encodeURIComponent(name)}`,{method:'PATCH',body:JSON.stringify(updateData)});updated++;}
+          }catch(err){}
+        }
+        showToast(`✅ تم تحديث ${updated} عميل`,'success');
+      }else{
+        const existing=new Set(clients.map(c=>c.company.trim()));
+        const toAdd=names.filter(n=>!existing.has(n)).map(n=>({company:n,industry:industry||'أخرى',region:region||'',engineer:'غير محدد',phone:'غير محدد',added_by:CU.id}));
+        if(!toAdd.length){showToast('⚠️ كل الشركات موجودة بالفعل','error');return;}
+        for(let i=0;i<toAdd.length;i+=50)await sb('clients',{method:'POST',body:JSON.stringify(toAdd.slice(i,i+50))});
+        showToast(`✅ تم إضافة ${toAdd.length} عميل`,'success');
+      }
+      closeModal('importModal');loadClients();
+    }catch(err){console.error(err);showToast('❌ خطأ في قراءة الملف','error');}
+  };
+  reader.readAsBinaryString(file);
+}
+
+async function runGoogleImport(file){
+  const reader=new FileReader();
+  reader.onload=async function(e){
+    try{
+      const wb=XLSX.read(e.target.result,{type:'binary'});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      const rows=XLSX.utils.sheet_to_json(ws,{defval:''});
+      if(!rows.length){showToast('❌ الملف فاضي','error');return;}
+
+      // Group contacts by company
+      const companies={};
+      for(const row of rows){
+        const company=(row['Organization Name']||row['Company']||'').toString().trim();
+        const name=(row['Name']||`${row['Given Name']||''} ${row['Family Name']||''}`.trim()||'').toString().trim();
+        const title=(row['Organization Title']||row['Job Title']||'').toString().trim();
+        const dept=(row['Organization Department']||'').toString().trim();
+        const phone=(row['Phone 1 - Value']||row['Mobile Phone']||row['Phone']||'').toString().trim();
+        const email=(row['E-mail 1 - Value']||row['Email']||row['E-mail Address']||'').toString().trim();
+
+        if(!company&&!name)continue;
+        const key=company||name;
+        if(!companies[key])companies[key]={company:key,contacts:[]};
+        if(name){
+          companies[key].contacts.push({name,title,dept,phone,email});
+        } else if(phone||email){
+          if(!companies[key].contacts.length)companies[key].contacts.push({name:key,title:'',dept:'',phone,email});
+          else{companies[key].contacts[0].phone=companies[key].contacts[0].phone||phone;companies[key].contacts[0].email=companies[key].contacts[0].email||email;}
+        }
+      }
+
+      const companyList=Object.values(companies);
+      if(!companyList.length){showToast('❌ لم يتم العثور على شركات','error');return;}
+
+      const existing=new Set(clients.map(c=>c.company.trim()));
+      let added=0,updated=0;
+
+      for(const co of companyList){
+        const first=co.contacts[0]||null;
+        const data={
+          company:co.company,
+          industry:'أخرى',
+          region:'',
+          engineer:first?first.name:'غير محدد',
+          phone:first?first.phone||'غير محدد':'غير محدد',
+          email:first?first.email||'':'',
+          contacts:co.contacts.length?JSON.stringify(co.contacts):null,
+          added_by:CU.id
+        };
+        try{
+          if(existing.has(co.company)){
+            // Update contacts only
+            await sb(`clients?company=eq.${encodeURIComponent(co.company)}`,{method:'PATCH',body:JSON.stringify({contacts:data.contacts,engineer:data.engineer,phone:data.phone,email:data.email})});
+            updated++;
+          }else{
+            await sb('clients',{method:'POST',body:JSON.stringify(data)});
+            added++;
+          }
+        }catch(err){console.error('Import error for',co.company,err);}
+      }
+      showToast(`✅ تم إضافة ${added} عميل وتحديث ${updated}`,'success');
+      closeModal('importModal');loadClients();
+    }catch(err){console.error(err);showToast('❌ خطأ في قراءة الملف','error');}
+  };
+  reader.readAsBinaryString(file);
+}
+
+/* ============================================================
+   EXPORT EXCEL
+============================================================ */
+function runExport(){
+  const fReg=document.getElementById('exp_region').value;
+  const fInd=document.getElementById('exp_industry').value;
+  const expType=document.getElementById('exp_type').value;
+  let toExport=clients.filter(c=>(!fReg||(c.region||'')===fReg)&&(!fInd||(c.industry||'')===fInd));
+  if(!toExport.length){showToast('❌ لا يوجد عملاء للتصدير','error');return;}
+  let rows,fname;
+  if(expType==='emails'){
+    const withEmail=toExport.filter(c=>c.email);
+    if(!withEmail.length){showToast('❌ لا يوجد إيميلات','error');return;}
+    rows=[['اسم الشركة','الإيميل','القطاع','المنطقة']];
+    withEmail.forEach(c=>rows.push([c.company,c.email,c.industry,c.region]));
+    fname=`InterTech_Emails${fReg?'_'+fReg:''}${fInd?'_'+fInd:''}.xlsx`;
+    showToast(`✅ تم تصدير ${withEmail.length} إيميل`,'success');
+  }else if(expType==='phones'){
+    rows=[['اسم الشركة','الموبايل','واتساب','القطاع','المنطقة']];
+    toExport.forEach(c=>rows.push([c.company,c.phone,c.whatsapp,c.industry,c.region]));
+    fname=`InterTech_Phones${fReg?'_'+fReg:''}${fInd?'_'+fInd:''}.xlsx`;
+    showToast(`✅ تم تصدير ${toExport.length} رقم`,'success');
+  }else{
+    rows=[['اسم الشركة','القطاع','المنطقة','العنوان','المهندس','الموبايل','الإيميل','ملاحظات','تاريخ الإضافة']];
+    toExport.forEach(c=>rows.push([c.company,c.industry,c.region,c.address,c.engineer,c.phone,c.email,c.notes,c.created_at?new Date(c.created_at).toLocaleDateString('ar-EG'):'']));
+    fname=`InterTech_Clients${fReg?'_'+fReg:''}${fInd?'_'+fInd:''}.xlsx`;
+    showToast(`✅ تم تصدير ${toExport.length} عميل`,'success');
+  }
+  const ws=XLSX.utils.aoa_to_sheet(rows);
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'البيانات');
+  XLSX.writeFile(wb,fname);
+  closeModal('exportModal');
+}
+
+/* ============================================================
+   USERS MANAGEMENT
+============================================================ */
+async function loadUsers(){
+  document.getElementById('usersContainer').innerHTML='<div class="loading"><div class="spinner"></div> جاري التحميل...</div>';
+  try{
+    allUsers=await sb('users?order=created_at.desc');
+    renderUsers();
+  }catch(e){document.getElementById('usersContainer').innerHTML='<div class="empty-state"><p>خطأ</p></div>';}
+}
+
+function renderUsers(){
+  const rc={'أدمن':'r-admin','مدير مبيعات':'r-manager','مندوب مبيعات':'r-sales'};
+  document.getElementById('usersContainer').innerHTML=allUsers.map(u=>`
+    <div class="user-card">
+      <div class="uc-top">
+        <div class="uc-avatar" style="background:${gc(u.name)}">${u.name[0]}</div>
+        <div>
+          <div class="uc-name">${u.name}</div>
+          <div class="uc-email">${u.email}</div>
+          <span class="role-badge ${rc[u.role]||'r-sales'}">${u.role}</span>
+          ${u.region?`<div style="font-size:11px;color:var(--muted);margin-top:2px">📍 ${u.region}</div>`:''}
+        </div>
+      </div>
+      <div class="uc-footer">
+        <span class="status-dot" style="color:${u.active?'var(--green)':'var(--red)'}">● ${u.active?'مفعل':'موقف'}</span>
+        <div style="display:flex;gap:6px">
+          <button class="btn-secondary" style="padding:5px 10px;font-size:11px" onclick="toggleUser('${u.id}',${u.active})">${u.active?'⏸ إيقاف':'▶ تفعيل'}</button>
+          ${u.id!==CU.id?`<button class="btn-danger" style="padding:5px 10px;font-size:11px" onclick="deleteUser('${u.id}')">🗑️</button>`:''}
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+function openAddUser(){
+  ['u_name','u_email','u_pass'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('u_role').value='مندوب مبيعات';
+  document.getElementById('u_region').value='';
+  document.getElementById('userModalTitle').textContent='＋ مستخدم جديد';
+  openModal('userModal');
+}
+
+function onRoleChange(){
+  const isSales=document.getElementById('u_role').value==='مندوب مبيعات';
+  document.getElementById('u_region_group').style.opacity=isSales?'1':'0.5';
+}
+
+async function saveUser(){
+  const name=document.getElementById('u_name').value.trim();
+  const email=document.getElementById('u_email').value.trim();
+  const pass=document.getElementById('u_pass').value.trim();
+  const role=document.getElementById('u_role').value;
+  const region=document.getElementById('u_region').value;
+  if(!name||!email||!pass){showToast('❌ اكمل الحقول المطلوبة','error');return;}
+  try{
+    await sb('users',{method:'POST',body:JSON.stringify({name,email,password:pass,role,region,active:true})});
+    showToast('✅ تم إضافة المستخدم','success');
+    closeModal('userModal');loadUsers();
+  }catch(e){showToast('❌ خطأ في الحفظ','error');}
+}
+
+async function toggleUser(id,active){
+  try{
+    await sb(`users?id=eq.${id}`,{method:'PATCH',body:JSON.stringify({active:!active})});
+    showToast(`✅ تم ${active?'إيقاف':'تفعيل'} المستخدم`,'success');
+    loadUsers();
+  }catch(e){showToast('❌ خطأ','error');}
+}
+
+async function deleteUser(id){
+  if(!confirm('هل أنت متأكد من حذف هذا المستخدم؟'))return;
+  try{
+    await sb(`users?id=eq.${id}`,{method:'DELETE'});
+    showToast('🗑️ تم حذف المستخدم','success');
+    loadUsers();
+  }catch(e){showToast('❌ خطأ في الحذف','error');}
+}
+
+/* ============================================================
+   CONTACT ACTIONS
+============================================================ */
+function doWa(phone,company){
+  if(!phone||phone==='غير محدد'){showToast('❌ لا يوجد رقم واتساب','error');return;}
+  const p=phone.replace(/\D/g,'');
+  const num=p.startsWith('0')?'2'+p:p;
+  window.open(`https://wa.me/${num}?text=${encodeURIComponent(`مرحباً، أتواصل معكم من Inter-Tech بخصوص ${company}`)},'_blank'`);
+}
+function doCall(phone){
+  if(!phone||phone==='غير محدد'){showToast('❌ لا يوجد رقم','error');return;}
+  window.location.href=`tel:${phone}`;
+}
+function doMail(email,company){
+  window.location.href=`mailto:${email}?subject=${encodeURIComponent('Inter-Tech')}&body=${encodeURIComponent('مرحباً،\n\nأتواصل معكم من Inter-Tech وكيل Belzona في مصر.\n\nمع تحياتي')}`;
+}
+function doMap(address){
+  window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`,'_blank');
+}
+
+/* ============================================================
+   MOBILE LOGO SHOW ON MOBILE
+============================================================ */
+function checkMobileLogo(){
+  const ml=document.getElementById('mobileLogo');
+  if(ml)ml.style.display=window.innerWidth<=768?'flex':'none';
+}
+window.addEventListener('resize',checkMobileLogo);
+window.addEventListener('load',checkMobileLogo);
+</script>
+</body>
+</html>
