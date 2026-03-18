@@ -615,6 +615,30 @@ button{cursor:pointer;}
   </div>
 </div>
 
+<!-- FIELD MAPPING MODAL -->
+<div class="overlay" id="mappingModal">
+  <div class="modal" style="max-width:680px">
+    <div class="modal-header">
+      <div class="modal-title">🗺️ ربط الأعمدة بالحقول</div>
+      <button class="modal-close" onclick="closeModal('mappingModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div style="background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.2);border-radius:10px;padding:10px 14px;font-size:12px;color:var(--muted);margin-bottom:16px;line-height:1.7">
+        📋 حدد لكل عمود في ملف Excel الحقل المقابل له في النظام. الأعمدة اللي مش محتاجها اختار <strong style="color:var(--text)">تجاهل</strong>. لازم تحدد عمود <strong style="color:var(--red)">اسم الشركة ⭐</strong> على الأقل.
+      </div>
+      <div id="mappingRows"></div>
+      <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border)">
+        <div style="font-size:11px;color:var(--muted);font-weight:700;margin-bottom:8px;letter-spacing:0.5px">👁 معاينة أول 3 صفوف من الملف:</div>
+        <div id="mappingPreview" style="overflow-x:auto;font-size:11px;border-radius:8px;border:1px solid var(--border)"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeModal('mappingModal');openModal('importModal')">→ رجوع</button>
+      <button class="btn-primary" onclick="confirmMapping()">✅ تأكيد الاستيراد</button>
+    </div>
+  </div>
+</div>
+
 <!-- EXPORT MODAL -->
 <div class="overlay" id="exportModal">
   <div class="modal">
@@ -736,6 +760,8 @@ let assignMode=false;
 let selectedClients=new Set();
 let editingClientId=null;
 let cmContacts=[]; // client modal contacts
+let importedWorkbook=null;
+let parsedExcelRows=[];
 
 /* ============================================================
    UTILS
@@ -1406,48 +1432,162 @@ async function runImport(){
   const file=document.getElementById('imp_file').files[0];
   if(!file){showToast('❌ اختر ملف أولاً','error');return;}
   const fileType=document.getElementById('imp_filetype').value;
-  if(fileType==='google'){
-    await runGoogleImport(file);
-    return;
-  }
-  const industry=document.getElementById('imp_industry').value;
-  const region=document.getElementById('imp_region').value;
-  const mode=document.querySelector('input[name="impMode"]:checked').value;
-  if(mode==='update'&&!industry&&!region){showToast('❌ اختر قطاع أو منطقة للتحديث','error');return;}
+  if(fileType==='google'){await runGoogleImport(file);return;}
+  // PHASE 1: Read file then show mapping modal
   const reader=new FileReader();
-  reader.onload=async function(e){
+  reader.onload=function(e){
     try{
       const wb=XLSX.read(e.target.result,{type:'binary'});
+      importedWorkbook=wb;
       const ws=wb.Sheets[wb.SheetNames[0]];
       const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
-      let col=0;
-      const hRow=rows.find(r=>r.some(c=>c?.toString().toLowerCase().includes('company')||c?.toString().includes('الشركة')));
-      if(hRow){const idx=hRow.findIndex(c=>c?.toString().toLowerCase().includes('company')||c?.toString().includes('الشركة'));if(idx>=0)col=idx;}
-      const names=rows.map(r=>r[col]?.toString().trim()).filter(n=>n&&isNaN(n));
-      if(!names.length){showToast('❌ الملف فاضي أو لا يوجد أسماء','error');return;}
-      if(mode==='update'){
-        let updated=0;
-        const updateData={};
-        if(industry)updateData.industry=industry;
-        if(region)updateData.region=region;
-        for(const name of names){
-          try{
-            const res=await sb(`clients?company=eq.${encodeURIComponent(name)}`);
-            if(res.length){await sb(`clients?company=eq.${encodeURIComponent(name)}`,{method:'PATCH',body:JSON.stringify(updateData)});updated++;}
-          }catch(err){}
-        }
-        showToast(`✅ تم تحديث ${updated} عميل`,'success');
-      }else{
-        const existing=new Set(clients.map(c=>c.company.trim()));
-        const toAdd=names.filter(n=>!existing.has(n)).map(n=>({company:n,industry:industry||'أخرى',region:region||'',engineer:'غير محدد',phone:'غير محدد',added_by:CU.id}));
-        if(!toAdd.length){showToast('⚠️ كل الشركات موجودة بالفعل','error');return;}
-        for(let i=0;i<toAdd.length;i+=50)await sb('clients',{method:'POST',body:JSON.stringify(toAdd.slice(i,i+50))});
-        showToast(`✅ تم إضافة ${toAdd.length} عميل`,'success');
-      }
-      closeModal('importModal');loadClients();
+      if(!rows.length){showToast('❌ الملف فاضي','error');return;}
+      showMappingModal(rows);
     }catch(err){console.error(err);showToast('❌ خطأ في قراءة الملف','error');}
   };
   reader.readAsBinaryString(file);
+}
+
+function showMappingModal(rows){
+  parsedExcelRows=rows;
+  // Find the first non-empty row as headers
+  const headers=rows[0]||[];
+  const preview=rows.slice(1,4);
+
+  const crmFields=[
+    {value:'',label:'-- تجاهل هذا العمود --'},
+    {value:'company',label:'⭐ اسم الشركة'},
+    {value:'industry',label:'🏭 القطاع الصناعي'},
+    {value:'region',label:'🗺️ المنطقة'},
+    {value:'address',label:'📍 العنوان'},
+    {value:'email',label:'📧 الإيميل'},
+    {value:'phone',label:'📱 الموبايل'},
+    {value:'whatsapp',label:'💬 واتساب'},
+    {value:'engineer',label:'👤 اسم جهة الاتصال'},
+    {value:'notes',label:'📝 ملاحظات'},
+  ];
+
+  function autoDetect(header){
+    const h=(header||'').toString().toLowerCase().trim();
+    if(h.includes('company')||h.includes('شركة')||h.includes('عميل')||h.includes('مؤسسة'))return 'company';
+    if(h.includes('industry')||h.includes('قطاع')||h.includes('sector'))return 'industry';
+    if(h.includes('region')||h.includes('منطقة')||h.includes('city')||h.includes('مدينة')||h.includes('محافظة'))return 'region';
+    if(h.includes('address')||h.includes('عنوان'))return 'address';
+    if(h.includes('email')||h.includes('ايميل')||h.includes('إيميل')||h.includes('mail'))return 'email';
+    if(h.includes('whatsapp')||h.includes('واتساب'))return 'whatsapp';
+    if(h.includes('phone')||h.includes('mobile')||h.includes('موبايل')||h.includes('هاتف')||h.includes('تليفون'))return 'phone';
+    if(h.includes('engineer')||h.includes('مهندس')||h.includes('contact')||h.includes('اتصال')||h.includes('مسئول'))return 'engineer';
+    if(h.includes('note')||h.includes('ملاحظ')||h.includes('comment'))return 'notes';
+    return '';
+  }
+
+  const mappingHTML=headers.map((h,i)=>{
+    const detected=autoDetect(h);
+    const sampleVals=preview.map(r=>(r[i]||'').toString().trim()).filter(v=>v).slice(0,3);
+    return `
+    <div style="display:grid;grid-template-columns:1fr 20px 1fr;gap:10px;align-items:center;margin-bottom:10px;padding:12px;background:var(--bg3);border-radius:12px;border:1px solid ${detected?'rgba(0,200,150,0.2)':'var(--border)'}">
+      <div>
+        <div style="font-size:10px;color:var(--muted);font-weight:700;margin-bottom:3px;text-transform:uppercase;letter-spacing:0.3px">عمود Excel</div>
+        <div style="font-size:13px;font-weight:700;color:var(--text)">${h||`العمود ${i+1}`}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:3px;direction:ltr;text-align:right">${sampleVals.join(' · ')||'—'}</div>
+      </div>
+      <div style="text-align:center;color:var(--muted);font-size:16px">→</div>
+      <div>
+        <div style="font-size:10px;color:var(--muted);font-weight:700;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.3px">حقل CRM</div>
+        <select class="form-input map-field-select" data-col="${i}" style="margin:0;font-size:12px;padding:8px 10px">
+          ${crmFields.map(f=>`<option value="${f.value}"${detected===f.value?' selected':''}>${f.label}</option>`).join('')}
+        </select>
+      </div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('mappingRows').innerHTML=mappingHTML;
+
+  // Preview table
+  const previewHTML=`<table style="width:100%;border-collapse:collapse;min-width:400px">
+    <thead><tr>${headers.map(h=>`<th style="padding:6px 10px;background:var(--bg3);border:1px solid var(--border);font-size:10px;font-weight:700;color:var(--muted);white-space:nowrap;text-align:right">${h||'—'}</th>`).join('')}</tr></thead>
+    <tbody>${preview.map(row=>`<tr>${headers.map((_,i)=>`<td style="padding:5px 10px;border:1px solid var(--border);font-size:11px;color:var(--muted);white-space:nowrap;text-align:right">${row[i]||'—'}</td>`).join('')}</tr>`).join('')}</tbody>
+  </table>`;
+  document.getElementById('mappingPreview').innerHTML=previewHTML;
+
+  closeModal('importModal');
+  openModal('mappingModal');
+}
+
+async function confirmMapping(){
+  // Collect column → CRM field mapping
+  const selects=document.querySelectorAll('.map-field-select');
+  const mapping={};
+  selects.forEach(sel=>{if(sel.value)mapping[parseInt(sel.dataset.col)]=sel.value;});
+
+  if(!Object.values(mapping).includes('company')){
+    showToast('❌ لازم تحدد عمود اسم الشركة','error');
+    return;
+  }
+
+  const mode=document.querySelector('input[name="impMode"]:checked').value;
+  const impIndustry=document.getElementById('imp_industry').value;
+  const impRegion=document.getElementById('imp_region').value;
+
+  // Build client objects from rows (skip header row)
+  const dataRows=parsedExcelRows.slice(1);
+  const clientsToProcess=dataRows
+    .map(row=>{
+      const obj={};
+      for(const[colIdx,fieldName]of Object.entries(mapping)){
+        const val=(row[colIdx]||'').toString().trim();
+        if(val)obj[fieldName]=val;
+      }
+      return obj;
+    })
+    .filter(obj=>obj.company&&isNaN(obj.company));
+
+  if(!clientsToProcess.length){showToast('❌ لا يوجد بيانات صالحة في الملف','error');return;}
+
+  // Apply fallbacks for unmapped fields
+  clientsToProcess.forEach(c=>{
+    if(!c.industry)c.industry=impIndustry||'أخرى';
+    if(!c.region)c.region=impRegion||'';
+    if(!c.engineer)c.engineer='غير محدد';
+    if(!c.phone)c.phone='غير محدد';
+    c.added_by=CU.id;
+  });
+
+  // Show loading
+  const confirmBtn=document.querySelector('#mappingModal .btn-primary');
+  const origText=confirmBtn.textContent;
+  confirmBtn.textContent='⏳ جاري الاستيراد...';
+  confirmBtn.disabled=true;
+
+  try{
+    if(mode==='update'){
+      let updated=0;
+      for(const c of clientsToProcess){
+        try{
+          const res=await sb(`clients?company=eq.${encodeURIComponent(c.company)}`);
+          if(res.length){
+            const{company,added_by,...updateData}=c;
+            await sb(`clients?company=eq.${encodeURIComponent(c.company)}`,{method:'PATCH',body:JSON.stringify(updateData)});
+            updated++;
+          }
+        }catch(err){}
+      }
+      showToast(`✅ تم تحديث ${updated} عميل`,'success');
+    }else{
+      const existing=new Set(clients.map(c=>c.company.trim()));
+      const toAdd=clientsToProcess.filter(c=>!existing.has(c.company));
+      if(!toAdd.length){showToast('⚠️ كل الشركات موجودة بالفعل','error');confirmBtn.textContent=origText;confirmBtn.disabled=false;return;}
+      for(let i=0;i<toAdd.length;i+=50)await sb('clients',{method:'POST',body:JSON.stringify(toAdd.slice(i,i+50))});
+      showToast(`✅ تم إضافة ${toAdd.length} عميل`,'success');
+    }
+    closeModal('mappingModal');
+    loadClients();
+  }catch(err){
+    console.error(err);
+    showToast('❌ خطأ في الحفظ','error');
+    confirmBtn.textContent=origText;
+    confirmBtn.disabled=false;
+  }
 }
 
 async function runGoogleImport(file){
