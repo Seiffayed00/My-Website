@@ -713,7 +713,7 @@ const SKEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI
 
 async function sb(path, opts={}){
   const res=await fetch(`${SURL}/rest/v1/${path}`,{
-    headers:{'apikey':SKEY,'Authorization':`Bearer ${SKEY}`,'Content-Type':'application/json','Prefer':'return=representation',...(opts.headers||{})},
+    headers:{'apikey':SKEY,'Authorization':`Bearer ${localStorage.getItem('sb_token')||SKEY}`,'Content-Type':'application/json','Prefer':'return=representation',...(opts.headers||{})},
     ...opts
   });
   if(!res.ok){const e=await res.json();throw new Error(JSON.stringify(e));}
@@ -788,7 +788,21 @@ async function doLogin(){
   if(!email||!pass){err.textContent='ادخل اسم المستخدم وكلمة السر';return;}
   btn.textContent='جاري التحقق...';btn.disabled=true;
   try{
-    const users=await sb(`users?email=eq.${encodeURIComponent(email)}&password=eq.${encodeURIComponent(pass)}&active=eq.true`);
+    // Step 1: Sign in with Supabase Auth
+    const authRes=await fetch(`${SURL}/auth/v1/token?grant_type=password`,{
+      method:'POST',
+      headers:{'apikey':SKEY,'Content-Type':'application/json'},
+      body:JSON.stringify({email,password:pass})
+    });
+    const authData=await authRes.json();
+    if(!authRes.ok||!authData.access_token){
+      err.textContent='بيانات خاطئة أو الحساب موقف';
+      btn.textContent='دخول ←';btn.disabled=false;return;
+    }
+    // Step 2: Store the token
+    localStorage.setItem('sb_token', authData.access_token);
+    // Step 3: Get user details from your users table
+    const users=await sb(`users?email=eq.${encodeURIComponent(email)}&active=eq.true`);
     if(!users.length){err.textContent='بيانات خاطئة أو الحساب موقف';btn.textContent='دخول ←';btn.disabled=false;return;}
     CU=users[0];
     localStorage.setItem('cu',JSON.stringify(CU));
