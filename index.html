@@ -788,7 +788,6 @@ async function doLogin(){
   if(!email||!pass){err.textContent='ادخل اسم المستخدم وكلمة السر';return;}
   btn.textContent='جاري التحقق...';btn.disabled=true;
   try{
-    // Step 1: Sign in with Supabase Auth
     const authRes=await fetch(`${SURL}/auth/v1/token?grant_type=password`,{
       method:'POST',
       headers:{'apikey':SKEY,'Content-Type':'application/json'},
@@ -799,9 +798,7 @@ async function doLogin(){
       err.textContent='بيانات خاطئة أو الحساب موقف';
       btn.textContent='دخول ←';btn.disabled=false;return;
     }
-    // Step 2: Store the token
     localStorage.setItem('sb_token', authData.access_token);
-    // Step 3: Get user details from your users table
     const users=await sb(`users?email=eq.${encodeURIComponent(email)}&active=eq.true`);
     if(!users.length){err.textContent='بيانات خاطئة أو الحساب موقف';btn.textContent='دخول ←';btn.disabled=false;return;}
     CU=users[0];
